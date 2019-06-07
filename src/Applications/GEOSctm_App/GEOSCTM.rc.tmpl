@@ -1,0 +1,118 @@
+
+# Model Resolution and Timestep Parameters
+# ----------------------------------------
+               NX: @NX
+               NY: @NY
+               IM: @GEOSCTM_IM
+               JM: @GEOSCTM_JM
+               LM: @GEOSCTM_LM
+         GRIDNAME: @GEOSCTM_GRIDNAME
+AdvCore_Advection: 1
+           DYCORE: OFF
+     HEARTBEAT_DT: @DT
+
+  GEOSCHEMCHEM_DT: @DT
+
+# Print Resource Parameters (0: Non-Default values, 1: ALL values)
+#-----------------------------------------------------------------
+PRINTRC: 1
+
+# Set the number of parallel I/O processes to use when
+# RESTART_TYPE and or CHECKPOINT_TYPE are set to pbinary or pnc4
+#---------------------------------------------------------------
+PARALLEL_READFORCING: 1
+NUM_READERS: 1
+NUM_WRITERS: 1
+
+MAPL_ENABLE_BOOTSTRAP: @BOOT
+
+# GEOSCTM Model Restart Files
+# ---------------------------------
+
+>>>PCHEM<<<PCHEM_INTERNAL_RESTART_FILE:            pchem_internal_rst
+>>>PCHEM<<<PCHEM_INTERNAL_CHECKPOINT_FILE:         pchem_internal_checkpoint
+>>>PCHEM<<<PCHEM_INTERNAL_CHECKPOINT_TYPE:         @CHECKPOINT_TYPE
+
+
+>>>GOCART<<<GOCART_INTERNAL_RESTART_FILE:           gocart_internal_rst
+>>>GOCART<<<GOCART_INTERNAL_CHECKPOINT_FILE:        gocart_internal_checkpoint
+>>>GOCART<<<GOCART_INTERNAL_CHECKPOINT_TYPE:        @CHECKPOINT_TYPE
+
+#CARMA_INTERNAL_RESTART_FILE:            carma_internal_rst
+#CARMA_INTERNAL_CHECKPOINT_FILE:         carma_internal_checkpoint
+#CARMA_INTERNAL_CHECKPOINT_TYPE:         @CHECKPOINT_TYPE
+
+#STRATCHEM_INTERNAL_RESTART_FILE:        stratchem_internal_rst
+#STRATCHEM_INTERNAL_CHECKPOINT_FILE:     stratchem_internal_checkpoint
+#STRATCHEM_INTERNAL_CHECKPOINT_TYPE:     @CHECKPOINT_TYPE
+
+>>>GMICHEM<<<GMICHEM_INTERNAL_RESTART_FILE:          gmichem_internal_rst
+>>>GMICHEM<<<GMICHEM_INTERNAL_CHECKPOINT_FILE:       gmichem_internal_checkpoint
+>>>GMICHEM<<<GMICHEM_INTERNAL_CHECKPOINT_TYPE:       @CHECKPOINT_TYPE
+
+>>>GMICHEM<<<GMICHEM_IMPORT_RESTART_FILE:            gmichem_import_rst
+>>>GMICHEM<<<GMICHEM_IMPORT_CHECKPOINT_FILE:         gmichem_import_checkpoint
+>>>GMICHEM<<<GMICHEM_IMPORT_CHECKPOINT_TYPE:         @CHECKPOINT_TYPE
+
+>>>GEOSCHEMCHEM<<<GEOSCHEMCHEM_INTERNAL_RESTART_FILE:     geoschemchem_internal_rst
+>>>GEOSCHEMCHEM<<<GEOSCHEMCHEM_INTERNAL_CHECKPOINT_FILE:  geoschemchem_internal_checkpoint
+>>>GEOSCHEMCHEM<<<GEOSCHEMCHEM_INTERNAL_CHECKPOINT_TYPE:  @CHECKPOINT_TYPE
+
+>>>GEOSCHEMCHEM<<<GEOSCHEMCHEM_IMPORT_RESTART_FILE:       geoschemchem_import_rst
+>>>GEOSCHEMCHEM<<<GEOSCHEMCHEM_IMPORT_CHECKPOINT_FILE:    geoschemchem_import_checkpoint
+>>>GEOSCHEMCHEM<<<GEOSCHEMCHEM_IMPORT_CHECKPOINT_TYPE:    @CHECKPOINT_TYPE
+
+#MAM_INTERNAL_RESTART_FILE:              mam_internal_rst
+#MAM_INTERNAL_CHECKPOINT_FILE:           mam_internal_checkpoint
+#MAM_INTERNAL_CHECKPOINT_TYPE:           @CHECKPOINT_TYPE
+
+>>>passiveTracer<<<TR_INTERNAL_RESTART_FILE:               tr_internal_rst
+>>>passiveTracer<<<TR_INTERNAL_CHECKPOINT_FILE:            tr_internal_checkpoint
+>>>passiveTracer<<<TR_INTERNAL_CHECKPOINT_TYPE:            @CHECKPOINT_TYPE
+
+>>>IdealizedPT<<<PTRACERS_INTERNAL_RESTART_FILE:         -pTracers_internal_rst
+>>>IdealizedPT<<<PTRACERS_INTERNAL_CHECKPOINT_FILE:       pTracers_internal_checkpoint
+>>>IdealizedPT<<<PTRACERS_INTERNAL_CHECKPOINT_TYPE:       @CHECKPOINT_TYPE
+
+
+# AeroChem Environment
+# --------------------
+     OX_RELAXTIME: @OX_RELAXTIME    # Standard Options:  GCM: 259200., DAS: 0.000
+    CH4_RELAXTIME: 259200.
+    N2O_RELAXTIME: 259200.
+  CFC11_RELAXTIME: 259200.
+  CFC12_RELAXTIME: 259200.
+ HCFC22_RELAXTIME: 259200.
+    H2O_RELAXTIME: 259200.
+    OX_FRIENDLIES: ANALYSIS:DYNAMICS:TURBULENCE:MOIST
+   CH4_FRIENDLIES: DYNAMICS:TURBULENCE:MOIST
+   N2O_FRIENDLIES: DYNAMICS:TURBULENCE:MOIST
+ CFC11_FRIENDLIES: DYNAMICS:TURBULENCE:MOIST
+ CFC12_FRIENDLIES: DYNAMICS:TURBULENCE:MOIST
+   H2O_FRIENDLIES: DYNAMICS:TURBULENCE:MOIST
+HCFC22_FRIENDLIES: DYNAMICS:TURBULENCE:MOIST
+       pchem_clim: species.data
+       pchem_clim_years: @PCHEM_CLIM_YEARS
+
+# Age-of-Air Parameters
+# ---------------------
+#AOA_FRIENDLIES: DYNAMICS:TURBULENCE:MOIST
+
+
+# GOCART broadband aerosol optics tables
+# -----------------------------------------------------
+DU_OPTICS: ExtData/@EMISSIONS/x/opticsBands_DU.v15_3.nc
+SS_OPTICS: ExtData/@EMISSIONS/x/opticsBands_SS.v3_3.nc
+SU_OPTICS: ExtData/@EMISSIONS/x/opticsBands_SU.v1_3.nc
+OC_OPTICS: ExtData/@EMISSIONS/x/opticsBands_OC.v1_3.nc
+BC_OPTICS: ExtData/@EMISSIONS/x/opticsBands_BC.v1_3.nc
+NI_OPTICS: ExtData/@EMISSIONS/x/opticsBands_NI.v2_5.nc
+BRC_OPTICS: ExtData/g5chem/x/opticsBands_BRC.v2_5.nc
+NUM_BANDS: 18
+
+DIURNAL_BIOMASS_BURNING: yes
+
+       RATS_PROVIDER: @RATS_PROVIDER   # options: PCHEM, GMICHEM, STRATCHEM (Radiatively active tracers)
+       AERO_PROVIDER: @AERO_PROVIDER   # options: GOCART.data, GOCART, MAM  (Radiatively active aerosols)
+ANALYSIS_OX_PROVIDER: @OANA_PROVIDER   # options: PCHEM, GMICHEM, STRATCHEM, GOCART
+

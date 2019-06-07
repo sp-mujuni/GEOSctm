@@ -1,0 +1,123 @@
+PrimaryExports%%
+# ---------|-------------|-------|--------|----------------------|--------|--------|-------------|----------|
+#  Import  |             |       | Regrid |        Refresh       | OffSet | Scale  | Variable On |   File   |
+#  Name    |    Units    | Clim  | Method |     Time Template    | Factor | Factor |     File    | Template |
+# ---------|-------------|-------|--------|----------------------|--------|--------|-------------|----------|
+#
+#------------
+# Climatilogy
+#------------
+FRLAND      '1'              Y        N     0                        0.0       1.0   FRLAND       /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA2/MERRA2_400.const_2d_asm_Nx.climatology.nc4
+FRLAKE      '1'              Y        N     0                        0.0       1.0   FRLAKE       /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA2/MERRA2_400.const_2d_asm_Nx.climatology.nc4
+FRLANDICE   '1'              Y        N     0                        0.0       1.0   FRLANDICE    /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA2/MERRA2_400.const_2d_asm_Nx.climatology.nc4
+FROCEAN     '1'              Y        N     0                        0.0       1.0   FROCEAN      /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA2/MERRA2_400.const_2d_asm_Nx.climatology.nc4
+
+#-------------
+# 2D Variables
+#-------------
+FRACI       '1'              N        N     0                        0.0       1.0   FRSEAICE     /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.tavg1_2d_flx_Nx.%y4%m2%d2.nc4
+ZPBL        'm'              N        N     0                        0.0       1.0   PBLH         /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.tavg1_2d_flx_Nx.%y4%m2%d2.nc4
+CN_PRCP     'kg m-2 s-1'     N        N     0                        0.0       1.0   PRECCON      /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.tavg1_2d_flx_Nx.%y4%m2%d2.nc4
+TPREC       'kg m-2 s-1'     N        N     0                        0.0       1.0   PRECTOT      /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.tavg1_2d_flx_Nx.%y4%m2%d2.nc4
+USTAR       'm s-1'          N        N     0                        0.0       1.0   USTAR        /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.tavg1_2d_flx_Nx.%y4%m2%d2.nc4
+Z0H         'm'              N        N     0                        0.0       1.0   Z0H          /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.tavg1_2d_flx_Nx.%y4%m2%d2.nc4
+DZ          'm'              N        N     0                        0.0       1.0   HLML         /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.tavg1_2d_flx_Nx.%y4%m2%d2.nc4
+SH          'W m-2'          N        N     0                        0.0       1.0   HFLUX        /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.tavg1_2d_flx_Nx.%y4%m2%d2.nc4
+LWI         '1'              N        N     0                        0.0       1.0   LWI          /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.tavg3_2d_chm_Nx.%y4%m2%d2.nc4
+
+ALBVF       '1'              N        N     0                        0.0       1.0   ALBVISDF     /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.tavg1_2d_rad_Nx.%y4%m2%d2.nc4
+SWNDSRF     'W m-2'          N        N     0                        0.0       1.0   SWGNT        /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.tavg1_2d_rad_Nx.%y4%m2%d2.nc4
+CLDTT       '1'              N        N     0                        0.0       1.0   CLDTOT       /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.tavg1_2d_rad_Nx.%y4%m2%d2.nc4
+SNODP       'kg m-2'         N        N     0                        0.0       1.0   SNODP        /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.tavg1_2d_lnd_Nx.%y4%m2%d2.nc4
+SNOMAS      'kg m-2'         N        N     0                        0.0       1.0   SNOMAS       /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.tavg1_2d_lnd_Nx.%y4%m2%d2.nc4
+DFPAR       'W m-2'          N        N     0                        0.0       1.0   PARDF        /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.tavg1_2d_lnd_Nx.%y4%m2%d2.nc4
+DRPAR       'W m-2'          N        N     0                        0.0       1.0   PARDR        /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.tavg1_2d_lnd_Nx.%y4%m2%d2.nc4
+GRN         '1'              N        N     0                        0.0       1.0   GRN          /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.tavg1_2d_lnd_Nx.%y4%m2%d2.nc4
+LAI         '1'              N        N     0                        0.0       1.0   LAI          /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.tavg1_2d_lnd_Nx.%y4%m2%d2.nc4
+TSOIL1      'K'              N        N     0                        0.0       1.0   TSOIL1       /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.tavg1_2d_lnd_Nx.%y4%m2%d2.nc4
+ASNOW       '1'              N        N     0                        0.0       1.0   FRSNO        /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.tavg1_2d_lnd_Nx.%y4%m2%d2.nc4
+WET1        '1'              N        N     0                        0.0       1.0   GWETTOP      /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.tavg1_2d_lnd_Nx.%y4%m2%d2.nc4
+WET2        '1'              N        N     0                        0.0       1.0   GWETROOT     /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.tavg1_2d_lnd_Nx.%y4%m2%d2.nc4
+RHOA        '1'              N        N     0                        0.0       1.0   RHOA         /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.tavg1_2d_flx_Nx.%y4%m2%d2.nc4
+CM          '1'              N        N     0                        0.0       1.0   CDM          /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.tavg1_2d_flx_Nx.%y4%m2%d2.nc4
+CN          '1'              N        N     0                        0.0       1.0   CN           /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.tavg1_2d_flx_Nx.%y4%m2%d2.nc4
+TA          'K'              N        N     0                        0.0       1.0   TLML         /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.tavg1_2d_flx_Nx.%y4%m2%d2.nc4
+PS          'Pa'             N        N     0                        0.0       1.0   PS           /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.tavg1_2d_slv_Nx.%y4%m2%d2.nc4
+SLP         'Pa'             N        N     0                        0.0       1.0   SLP          /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.tavg1_2d_slv_Nx.%y4%m2%d2.nc4
+TROPP       'Pa'             N        N     0                        0.0       1.0   TROPPB       /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.tavg1_2d_slv_Nx.%y4%m2%d2.nc4
+U10M        'm s-1'          N        N     0                        0.0       1.0   U10M         /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.tavg1_2d_slv_Nx.%y4%m2%d2.nc4
+V10M        'm s-1'          N        N     0                        0.0       1.0   V10M         /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.tavg1_2d_slv_Nx.%y4%m2%d2.nc4
+U2M         'm s-1'          N        N     0                        0.0       1.0   U2M          /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.tavg1_2d_slv_Nx.%y4%m2%d2.nc4
+V2M         'm s-1'          N        N     0                        0.0       1.0   V2M          /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.tavg1_2d_slv_Nx.%y4%m2%d2.nc4
+U10N        'm s-1'          N        N     0                        0.0       1.0   U10M         /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.tavg1_2d_slv_Nx.%y4%m2%d2.nc4
+V10N        'm s-1'          N        N     0                        0.0       1.0   V10M         /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.tavg1_2d_slv_Nx.%y4%m2%d2.nc4
+TS          'K'              N        N     0                        0.0       1.0   TS           /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.tavg1_2d_slv_Nx.%y4%m2%d2.nc4
+T2M         'K'              N        N     0                        0.0       1.0   T2M          /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.tavg1_2d_slv_Nx.%y4%m2%d2.nc4
+PHIS        'm+2 s-2'        N        N     0                        0.0       1.0   PHIS         /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.inst3_3d_asm_Nv.%y4%m2%d2.nc4
+
+#-------------
+# 3D variables at edge
+#-------------
+PLE         'Pa'             N        N     0                        0.0       1.0   PLE          /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.tavg3_3d_nav_Ne.%y4%m2%d2.nc4
+ZLE         'm'              N        N     0                        0.0       1.0   ZLE	  /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.tavg3_3d_nav_Ne.%y4%m2%d2.nc4
+KH          'm+2 s-1'        N        N     0                        0.0       1.0   KH 	  /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.tavg3_3d_trb_Ne.%y4%m2%d2.nc4
+CNV_MFC     'kg m-2 s-1'     N        N     0                        0.0       1.0   CMFMC	  /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.tavg3_3d_mst_Ne.%y4%m2%d2.nc4
+PFI_CN      'kg m-2 s-1'     N        N     0                        0.0       1.0   PFICU	  /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.tavg3_3d_mst_Ne.%y4%m2%d2.nc4
+PFL_CN      'kg m-2 s-1'     N        N     0                        0.0       1.0   PFLCU	  /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.tavg3_3d_mst_Ne.%y4%m2%d2.nc4
+PFI_LSAN    'kg m-2 s-1'     N        N     0                        0.0       1.0   PFILSAN	  /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.tavg3_3d_mst_Ne.%y4%m2%d2.nc4
+PFL_LSAN    'kg m-2 s-1'     N        N     0                        0.0       1.0   PFLLSAN	  /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.tavg3_3d_mst_Ne.%y4%m2%d2.nc4
+PFICU       'kg m-2 s-1'     N        N     0                        0.0       1.0   PFICU	  /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.tavg3_3d_mst_Ne.%y4%m2%d2.nc4
+PFILSAN     'kg m-2 s-1'     N        N     0                        0.0       1.0   PFILSAN	  /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.tavg3_3d_mst_Ne.%y4%m2%d2.nc4
+
+#-------------
+# 3D variables at center
+#-------------
+T           'K'              N        N     0                        0.0       1.0   T            /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.inst3_3d_asm_Nv.%y4%m2%d2.nc4
+RH2         '1'              N        N     0                        0.0       1.0   RH           /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.inst3_3d_asm_Nv.%y4%m2%d2.nc4
+Q           'kg kg-1'        N        N     0                        0.0       1.0   QV           /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.inst3_3d_asm_Nv.%y4%m2%d2.nc4
+QI          'kg kg-1'        N        N     0                        0.0       1.0   QI           /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.inst3_3d_asm_Nv.%y4%m2%d2.nc4
+QL          'kg kg-1'        N        N     0                        0.0       1.0   QL           /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.inst3_3d_asm_Nv.%y4%m2%d2.nc4
+QITOT       'kg kg-1'        N        N     0                        0.0       1.0   QI           /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.inst3_3d_asm_Nv.%y4%m2%d2.nc4
+QLTOT       'kg kg-1'        N        N     0                        0.0       1.0   QL           /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.inst3_3d_asm_Nv.%y4%m2%d2.nc4
+QOT         'kg kg-1'        N        N     0                        0.0       1.0   QI           /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.inst3_3d_asm_Nv.%y4%m2%d2.nc4
+FCLD        '1'              N        N     0                        0.0       1.0   CLOUD        /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.inst3_3d_asm_Nv.%y4%m2%d2.nc4
+CNV_MFD     'kg m-2 s-1'     N        N     0                        0.0       1.0   DTRAIN       /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.tavg3_3d_cld_Nv.%y4%m2%d2.nc4
+TAUCLW      '1'              N        N     0                        0.0       1.0   TAUCLW       /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.tavg3_3d_cld_Nv.%y4%m2%d2.nc4
+TAUCLI      '1'              N        N     0                        0.0       1.0   TAUCLI       /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.tavg3_3d_cld_Nv.%y4%m2%d2.nc4
+DQDT        'kg/kg/s'        N        N     0                        0.0       1.0   DQRCU        /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.tavg3_3d_mst_Nv.%y4%m2%d2.nc4
+DQRL        'kg/kg/s'        N        N     0                        0.0       1.0   DQRLSAN      /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.tavg3_3d_mst_Nv.%y4%m2%d2.nc4
+DQRC        'kg/kg/s'        N        N     0                        0.0       1.0   DQRCU        /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.tavg3_3d_mst_Nv.%y4%m2%d2.nc4
+DQIDT       'kg/kg/s'        N        N     0                        0.0       1.0   DQIDTMST     /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.tavg3_3d_qdt_Nv.%y4%m2%d2.nc4
+DQLDT       'kg/kg/s'        N        N     0                        0.0       1.0   DQLDTMST     /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.tavg3_3d_qdt_Nv.%y4%m2%d2.nc4
+REV_CN      'kg/kg/s'        N        N     0                        0.0       1.0   REEVAPCN     /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.tavg3_3d_mst_Nv.%y4%m2%d2.nc4
+
+QITOT1      'kg kg-1'        N        N     0;-@nhmsDT                  0.0       1.0   QI           /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.inst3_3d_asm_Nv.%y4%m2%d2.nc4
+QLTOT1      'kg kg-1'        N        N     0;-@nhmsDT                  0.0       1.0   QL           /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.inst3_3d_asm_Nv.%y4%m2%d2.nc4
+QOT1        'kg kg-1'        N        N     0;-@nhmsDT                  0.0       1.0   QI           /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.inst3_3d_asm_Nv.%y4%m2%d2.nc4
+U           'm s-1'          N        N     0                        0.0       1.0   U            /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.inst3_3d_asm_Nv.%y4%m2%d2.nc4
+V           'm s-1'          N        N     0                        0.0       1.0   V            /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.inst3_3d_asm_Nv.%y4%m2%d2.nc4
+#----------------
+#AdvCore Specific
+#----------------
+PLE0        'Pa'             N        N     0                        0.0       1.0   PLE          /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.tavg3_3d_nav_Ne.%y4%m2%d2.nc4
+PLE1        'Pa'             N        N     0;@nhmsDT                   0.0       1.0   PLE          /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.tavg3_3d_nav_Ne.%y4%m2%d2.nc4
+UC0;VC0     'm s-1'          N        N     0                        0.0       1.0   U;V          /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.inst3_3d_asm_Nv.%y4%m2%d2.nc4
+UC1;VC1     'm s-1'          N        N     0;@nhmsDT                   0.0       1.0   U;V          /archive/u/dao_ops/GEOS-@FPmod/GEOSadas-@FPver/@FPtype/diag/Y%y4/M%m2/@FPtype.inst3_3d_asm_Nv.%y4%m2%d2.nc4
+%%
+
+Masks%%
+# ---------|------------------------------------------------------|
+#  Name    |                  Template File Name                  |
+# ---------|------------------------------------------------------|
+#          |                                                      |
+# ---------|------------------------------------------------------|
+%%
+
+DerivedExports%%
+# ---------|---------|--------------------------------------------|
+#  Export  | Primary |_________________ Mask _____________________|
+#  Name    |  Name   |    Name    |           Expression          |    
+# ---------|---------|------------|-------------------------------|
+# ---------|---------|------------|-------------------------------|
+%%
+

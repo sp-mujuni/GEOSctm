@@ -1,0 +1,135 @@
+PrimaryExports%%
+# ---------|-------------|-------|--------|----------------------|--------|--------|-------------|----------|
+#  Import  |             |       | Regrid |        Refresh       | OffSet | Scale  | Variable On |   File   |
+#  Name    |    Units    | Clim  | Method |     Time Template    | Factor | Factor |     File    | Template |
+# ---------|-------------|-------|--------|----------------------|--------|--------|-------------|----------|
+#
+#------------
+# Climatology
+#------------
+FRLAND      '1'              Y        N           0                 0.0      1.0     FRLAND       /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/MERRA300.prod.assim.const_2d_asm_Nx.clim.nc4
+FRLAKE      '1'              Y        N           0                 0.0      1.0     FRLAKE       /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/MERRA300.prod.assim.const_2d_asm_Nx.clim.nc4
+FRLANDICE   '1'              Y        N           0                 0.0      1.0     FRLANDICE    /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/MERRA300.prod.assim.const_2d_asm_Nx.clim.nc4
+FROCEAN     '1'              Y        N           0                 0.0      1.0     FROCEAN      /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/MERRA300.prod.assim.const_2d_asm_Nx.clim.nc4
+PHIS        'm+2 s-2'        Y        N           0                 0.0      1.0     PHIS         /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/MERRA300.prod.assim.const_2d_asm_Nx.clim.nc4
+
+#-------------
+# 2D Variables
+#-------------
+FRACI       '1'              N        N           0                 0.0	     1.0     FRSEAICE     /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg1_2d_flx_Nx.%y4%m2%d2.hdf
+ZPBL        'm'              N        N           0                 0.0	     1.0     PBLH         /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg1_2d_flx_Nx.%y4%m2%d2.hdf
+PRECCON     'kg m-2 s-1'     N        N           0                 0.0	     1.0     PRECCON      /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg1_2d_flx_Nx.%y4%m2%d2.hdf
+PRECANV     'kg m-2 s-1'     N        N           0                 0.0	     1.0     PRECANV      /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg1_2d_flx_Nx.%y4%m2%d2.hdf
+PRECLSC     'kg m-2 s-1'     N        N           0                 0.0	     1.0     PRECLSC      /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg1_2d_flx_Nx.%y4%m2%d2.hdf
+CN_PRCP     'kg m-2 s-1'     N        N           0                 0.0	     1.0     PRECCON      /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg1_2d_flx_Nx.%y4%m2%d2.hdf
+TPREC       'kg m-2 s-1'     N        N           0                 0.0	     1.0     PRECTOT      /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg1_2d_flx_Nx.%y4%m2%d2.hdf
+USTAR       'm s-1'          N        N           0                 0.0	     1.0     USTAR        /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg1_2d_flx_Nx.%y4%m2%d2.hdf
+Z0H         'm'              N        N           0                 0.0	     1.0     Z0H          /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg1_2d_flx_Nx.%y4%m2%d2.hdf
+DZ          'm'              N        N           0                 0.0	     1.0     HLML         /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg1_2d_flx_Nx.%y4%m2%d2.hdf
+SH          'W m-2'          N        N           0                 0.0	     1.0     HFLUX        /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg1_2d_flx_Nx.%y4%m2%d2.hdf
+
+SNOMAS      'kg m-2'         N        N           0                 0.0	     1.0     SNOMAS       /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg1_2d_lnd_Nx.%y4%m2%d2.hdf
+SNOWDP      'kg m-2'         N        N           0                 0.0	     1.0     SNODP        /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg1_2d_lnd_Nx.%y4%m2%d2.hdf
+
+ALBVF       '1'              N        N           0                 0.0	     1.0     ALBVISDF     /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg1_2d_rad_Nx.%y4%m2%d2.hdf
+SWNDSRF     'W m^-2'         N        N           0                 0.0	     1.0     SWGNT        /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg1_2d_rad_Nx.%y4%m2%d2.hdf
+CLDTT       '1'              N        N           0                 0.0	     1.0     CLDTOT       /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg1_2d_rad_Nx.%y4%m2%d2.hdf
+DFPAR       'W m-2'          N        N           0                 0.0	     1.0     PARDF        /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.simul.tavg1_2d_mld_Nx.%y4%m2%d2.hdf
+DRPAR       'W m-2'          N        N           0                 0.0	     1.0     PARDR        /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.simul.tavg1_2d_mld_Nx.%y4%m2%d2.hdf
+GRN         '1'              N        N           0                 0.0	     1.0     GRN          /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.simul.tavg1_2d_mld_Nx.%y4%m2%d2.hdf
+LAI         '1'              N        N           0                 0.0	     1.0     LAI          /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.simul.tavg1_2d_mld_Nx.%y4%m2%d2.hdf
+TSOIL1      'K'              N        N           0                 0.0	     1.0     TSOIL1       /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.simul.tavg1_2d_mld_Nx.%y4%m2%d2.hdf
+ASNOW       '1'              N        N           0                 0.0	     1.0     FRSNO        /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.simul.tavg1_2d_mld_Nx.%y4%m2%d2.hdf
+WET1        '1'              N        N           0                 0.0	     1.0     GWETTOP      /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.simul.tavg1_2d_mld_Nx.%y4%m2%d2.hdf
+WET2        '1'              N        N           0                 0.0	     1.0     GWETROOT     /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.simul.tavg1_2d_mld_Nx.%y4%m2%d2.hdf
+RHOA        '1'              N        N           0                 0.0	     1.0     RHOS         /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg1_2d_flx_Nx.%y4%m2%d2.hdf
+CM          '1'              N        N           0                 0.0	     1.0     CDM          /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg1_2d_flx_Nx.%y4%m2%d2.hdf
+CN          '1'              N        N           0                 0.0	     1.0     CN           /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg1_2d_flx_Nx.%y4%m2%d2.hdf
+TA          'K'              N        N           0                 0.0	     1.0     TLML         /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg1_2d_flx_Nx.%y4%m2%d2.hdf
+PS          'Pa'             N        N           0                 0.0	     1.0     PS           /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg1_2d_slv_Nx.%y4%m2%d2.hdf
+SLP         'Pa'             N        N           0                 0.0	     1.0     SLP          /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg1_2d_slv_Nx.%y4%m2%d2.hdf
+TROPP       'Pa'             N        N           0                 0.0	     1.0     TROPPB       /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg1_2d_slv_Nx.%y4%m2%d2.hdf
+U10M        'm s-1'          N        N           0                 0.0	     1.0     U10M         /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg1_2d_slv_Nx.%y4%m2%d2.hdf
+V10M        'm s-1'          N        N           0                 0.0	     1.0     V10M         /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg1_2d_slv_Nx.%y4%m2%d2.hdf
+U2M         'm s-1'          N        N           0                 0.0	     1.0     U2M          /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg1_2d_slv_Nx.%y4%m2%d2.hdf
+V2M         'm s-1'          N        N           0                 0.0	     1.0     V2M          /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg1_2d_slv_Nx.%y4%m2%d2.hdf
+U10N        'm s-1'          N        N           0                 0.0	     1.0     U10M         /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg1_2d_slv_Nx.%y4%m2%d2.hdf
+V10N        'm s-1'          N        N           0                 0.0	     1.0     V10M         /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg1_2d_slv_Nx.%y4%m2%d2.hdf
+TS          'K'              N        N           0                 0.0	     1.0     TS           /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg1_2d_slv_Nx.%y4%m2%d2.hdf
+T2M         'K'              N        N           0                 0.0	     1.0     T2M          /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg1_2d_slv_Nx.%y4%m2%d2.hdf
+
+#---------------------
+# 3D variables at edge
+#---------------------
+PLE         'Pa'             N        N           0                 0.0	     1.0     PLE          /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.inst3_3d_chm_Ne.%y4%m2%d2.hdf
+KH          'm+2 s-1'        N        N           0                 0.0	     1.0     KH           /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg3_3d_chm_Fe.%y4%m2%d2.hdf
+CNV_MFC     'kg m-2 s-1'     N        N           0                 0.0	     1.0     CMFMC        /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg3_3d_chm_Fe.%y4%m2%d2.hdf
+PFI_CN      'kg m-2 s-1'     N        N           0                 0.0	     1.0     PFICU        /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg3_3d_chm_Fe.%y4%m2%d2.hdf
+PFL_CN      'kg m-2 s-1'     N        N           0                 0.0	     1.0     PFLCU        /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg3_3d_chm_Fe.%y4%m2%d2.hdf
+PFI_LSAN    'kg m-2 s-1'     N        N           0                 0.0	     1.0     PFILSAN      /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg3_3d_chm_Fe.%y4%m2%d2.hdf
+PFL_LSAN    'kg m-2 s-1'     N        N           0                 0.0	     1.0     PFLLSAN      /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg3_3d_chm_Fe.%y4%m2%d2.hdf
+PFICU       'kg m-2 s-1'     N        N           0                 0.0	     1.0     PFICU        /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg3_3d_chm_Fe.%y4%m2%d2.hdf
+PFILSAN     'kg m-2 s-1'     N        N           0                 0.0	     1.0     PFILSAN      /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg3_3d_chm_Fe.%y4%m2%d2.hdf
+
+CNV_CVW     'kg m-2 s-1'     N        N           0                 0.0      1.0     none         /dev/null
+CNV_FRC     'kg m-2 s-1'     N        N           0                 0.0      1.0     none         /dev/null
+
+#-----------------------
+# 3D variables at center
+#-----------------------
+T           'K'              N        N           0                 0.0	     1.0     T            /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg3_3d_chm_Fv.%y4%m2%d2.hdf
+Q           'kg kg-1'        N        N           0                 0.0	     1.0     QV           /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg3_3d_chm_Fv.%y4%m2%d2.hdf
+QL          'kg kg-1'        N        N           0                 0.0	     1.0     QL           /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg3_3d_chm_Fv.%y4%m2%d2.hdf
+QI          'kg kg-1'        N        N           0                 0.0	     1.0     QI           /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg3_3d_chm_Fv.%y4%m2%d2.hdf
+QLTOT       'kg kg-1'        N        N           0                 0.0	     1.0     QL           /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg3_3d_chm_Fv.%y4%m2%d2.hdf
+QITOT       'kg kg-1'        N        N           0                 0.0	     1.0     QI           /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg3_3d_chm_Fv.%y4%m2%d2.hdf
+CNV_MFD     'kg m-2 s-1'     N        N           0                 0.0	     1.0     DTRAIN       /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg3_3d_chm_Fv.%y4%m2%d2.hdf
+TAUCLW      '1'              N        N           0                 0.0	     1.0     TAUCLW       /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg3_3d_chm_Fv.%y4%m2%d2.hdf
+TAUCLI      '1'              N        N           0                 0.0	     1.0     TAUCLI       /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg3_3d_chm_Fv.%y4%m2%d2.hdf
+DELP        'PA'             N        N           0                 0.0	     1.0     DELP         /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg3_3d_chm_Fv.%y4%m2%d2.hdf
+QLTOT1      'kg kg-1'        N        N           0;-@nhmsDT           0.0      1.0     QL           /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg3_3d_chm_Fv.%y4%m2%d2.hdf
+QITOT1      'kg kg-1'        N        N           0;-@nhmsDT           0.0      1.0     QI           /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg3_3d_chm_Fv.%y4%m2%d2.hdf
+U           'm s-1'          N        N           0                 0.0	     1.0     U            /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg3_3d_chm_Fv.%y4%m2%d2.hdf
+V           'm s-1'          N        N           0                 0.0	     1.0     V            /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg3_3d_chm_Fv.%y4%m2%d2.hdf
+
+#Check this out
+FCLD        '1'              N        N           0                 0.0	     1.0     CFLS         /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg3_3d_chm_Fv.%y4%m2%d2.hdf
+
+#----------------------------------------
+# 3D variables on reduced pressure levels
+#----------------------------------------
+DQDT        'kg/kg/s'        N        N           0                 0.0      1.0     DQRCU        /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg3_3d_mst_Cp.%y4%m2%d2.hdf
+DQRL        'kg/kg/s'        N        N           0                 0.0      1.0     DQRLSAN      /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg3_3d_mst_Cp.%y4%m2%d2.hdf
+DQRC        'kg/kg/s'        N        N           0                 0.0      1.0     DQRCU        /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg3_3d_mst_Cp.%y4%m2%d2.hdf
+REV_CN      'kg/kg/s'        N        N           0                 0.0      1.0     REEVAPCN     /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg3_3d_mst_Cp.%y4%m2%d2.hdf
+DQIDT       'kg/kg/s'        N        N           0                 0.0      1.0     DQIDTMST     /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg3_3d_qdt_Cp.%y4%m2%d2.hdf
+DQLDT       'kg/kg/s'        N        N           0                 0.0      1.0     DQLDTMST     /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg3_3d_qdt_Cp.%y4%m2%d2.hdf
+
+#----------------
+#AdvCore Specific
+#----------------
+PLE0        'Pa'             N        N           0                 0.0	     1.0     PLE          /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.inst3_3d_chm_Ne.%y4%m2%d2.hdf
+PLE1        'Pa'             N        N           0;@nhmsDT            0.0      1.0     PLE          /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.inst3_3d_chm_Ne.%y4%m2%d2.hdf
+UC0;VC0     'm s-1'          N        N           0                 0.0	     1.0     U;V          /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg3_3d_chm_Fv.%y4%m2%d2.hdf
+UC1;VC1     'm s-1'          N        N           0;@nhmsDT            0.0      1.0     U;V          /discover/nobackup/projects/gmi/gmidata2/input/metfields/rawMERRA/%y4/%m2/@MERRA1type.prod.assim.tavg3_3d_chm_Fv.%y4%m2%d2.hdf
+
+
+
+%%
+#
+Masks%%
+# ---------|------------------------------------------------------|
+#  Name    |                  Template File Name                  |
+# ---------|------------------------------------------------------|
+#          |                                                      |
+# ---------|------------------------------------------------------|
+%%
+
+DerivedExports%%
+# ---------|---------|--------------------------------------------|
+#  Export  | Primary |_________________ Mask _____________________|
+#  Name    |  Name   |    Name    |           Expression          |    
+# ---------|---------|------------|-------------------------------|
+# ---------|---------|------------|-------------------------------|
+%%
+
