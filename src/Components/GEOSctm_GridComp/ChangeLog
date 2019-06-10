@@ -1,0 +1,11 @@
+GEOS-5 CTM ChangeLog
+
+2016-06-13 <jon.e.nielsen@nasa.gov> Tag: Heracles-5_2_p1_CTM
+        * Includes M. Manyin's promotion of VegLai to Chem_Shared for GMI and TR,
+          Valentina's StratChem updates present in 5_2_p1, and Anton's NI_GridComp
+          in GOCART.
+
+2016-05-11 <jon.e.nielsen@nasa.gov> Tag: Heracles-5_1_CTM_p4
+        * Includes updates for FPIT from J. Kouatchou
+
+
