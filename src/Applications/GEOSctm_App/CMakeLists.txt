@@ -6,6 +6,6 @@ set (SRCS
 
 esma_add_library (${this}
   SRCS ${SRCS}
-  DEPENDENCIES MAPL_Base
+  DEPENDENCIES GEOSctm_GridComp MAPL_Base
   )
   

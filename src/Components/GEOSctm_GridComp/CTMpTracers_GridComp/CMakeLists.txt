@@ -7,6 +7,6 @@ set (SRCS
 
 esma_add_library (${this}
   SRCS ${SRCS}
-  DEPENDENCIES MAPL_Base
+  DEPENDENCIES FVdycore_GridComp GMIchem_GridComp Chem_Shared MAPL_Base GMAO_hermes
   )
   

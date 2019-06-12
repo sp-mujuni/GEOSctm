@@ -1,0 +1,11 @@
+/*
+!/LANL_Shared
+!/GMAO_ncdiag
+!/GMAO_ods
+!/GMAO_psas
+!/GMAO_pyobs
+!/GMAO_stoch
+!/GMAO_transf
+!/arpack
+!/pnagpack
+!/GNUmakefile
