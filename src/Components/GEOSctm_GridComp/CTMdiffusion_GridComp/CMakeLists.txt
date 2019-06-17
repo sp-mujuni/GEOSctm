@@ -9,6 +9,6 @@ set (SRCS
 
 esma_add_library (${this}
   SRCS ${SRCS}
-  DEPENDENCIES Chem_Shared MAPL_Base
+  DEPENDENCIES GEOSchem_GridComp Chem_Shared MAPL_Base
   )
   

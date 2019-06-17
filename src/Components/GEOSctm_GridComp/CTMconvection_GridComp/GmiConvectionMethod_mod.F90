@@ -813,11 +813,11 @@
         aerosol(1) = 0
         aerosol(2) = 1
 
-        hstar(1)   = 9.3d-3
-        hstar(2)   = 0.0d0
+        hstar_wet(1)   = 9.3d-3
+        hstar_wet(2)   = 0.0d0
 
-        delh_298_over_r(1) = 2600.0d0
-        delh_298_over_r(2) =    0.0d0
+        delH_298_over_R_wet(1) = 2600.0d0
+        delH_298_over_R_wet(2) =    0.0d0
 
         retention_eff  (1) =    0.0d0
         retention_eff  (2) =    0.0d0
@@ -827,26 +827,32 @@
         aerosol(1) = 15
         aerosol(2) = 15
 
-        hstar(1)   = 0.0d0
-        hstar(2)   = 0.0d0
+        hstar_wet(1)   = 0.0d0
+        hstar_wet(2)   = 0.0d0
 
-        delh_298_over_r(1) =    0.0d0
-        delh_298_over_r(2) =    0.0d0
+        delH_298_over_R_wet(1) =    0.0d0
+        delH_298_over_R_wet(2) =    0.0d0
 
         retention_eff  (1) =    0.0d0
         retention_eff  (2) =    0.0d0
 
       else if (chem_opt == 8) then    ! Sulfur chemistry
 
-        hstar(IFSO2_l) = 600.0d0
-        hstar(INSO2_l) = 600.0d0
+        PRINT*,'Cannot run chem_opt 8 --  stopping'
+        STOP
+!       hstar_wet(IFSO2_l) = 600.0d0
+!       hstar_wet(INSO2_l) = 600.0d0
 
       end if
 
+       if (IFSO2 /= 0 .OR. INSO2 /= 0) then
+         PRINT*,'Code is not able to run the FSO2,NSO2 case - stopping'
+         STOP
 !.sds. make like gocart
-       if(IFSO2 .gt. 0) hstar(IFSO2_l) = 600.0d0
-       if(INSO2 .gt. 0) hstar(INSO2_l) = 600.0d0
+!      if(IFSO2 .gt. 0) hstar_wet(IFSO2_l) = 600.0d0
+!      if(INSO2 .gt. 0) hstar_wet(INSO2_l) = 600.0d0
 !.sds. 
+       end if
 
 
 !     -----------------------------------------------------------
@@ -1230,13 +1236,13 @@
                   kloss(:) = 5.0d-3 * REL_SCAV_EFF(aerosol(mapTracer(ic)))
 #endif
 
-                else if (hstar(mapTracer(ic)) > 0.0d0) then
+                else if (hstar_wet(mapTracer(ic)) > 0.0d0) then
 
 !                 =======================
                   call Calc_Wet_Loss_Rate  &
 !                 =======================
-     &              (.true., mapTracer(ic), ih2o2_num, delh_298_over_r(mapTracer(ic)),  &
-     &               hstar(mapTracer(ic)), retention_eff(mapTracer(ic)), press3e(:,ij,ik),  &
+     &              (.true., mapTracer(ic), ih2o2_num, delH_298_over_R_wet(mapTracer(ic)),  &
+     &               hstar_wet(mapTracer(ic)), retention_eff(mapTracer(ic)), press3e(:,ij,ik),  &
      &               kel(:,ij,ik), kloss(:), i1, i2, ilo, ihi)
 
 
@@ -1333,7 +1339,7 @@
 
               do ic = 1, num_species
 
-                if ((hstar(mapTracer(ic)) > 0.0d0) .or.  &
+                if ((hstar_wet(mapTracer(ic)) > 0.0d0) .or.  &
      &              (aerosol(mapTracer(ic)) >= 1)  .or.  &
      &              (mapTracer(ic) == ihno3_num)) then
 
