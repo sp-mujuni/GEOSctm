@@ -25,7 +25,7 @@ set (ACG_FLAGS -v)
 set (F2PYEXT .so)
 set (F2PY_SUFFIX .so)
 
-set (FV_PRECISION R4)
+set (FV_PRECISION R8)
 
 # Set the default build type to release with debug info
 if (NOT CMAKE_BUILD_TYPE)
