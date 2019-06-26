@@ -2,13 +2,20 @@ cmake_minimum_required (VERSION 3.13)
 cmake_policy (SET CMP0053 NEW)
 cmake_policy (SET CMP0054 NEW)
 
+if (NOT SKIP_MANAGE_EXTERNALS)
+  execute_process (
+    COMMAND "manage_externals/checkout_externals"
+    RESULTS_VARIABLE foo
+    OUTPUT_VARIABLE output
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    )
+endif ()
+set(SKIP_MANAGE_EXTERNALS ON CACHE BOOL "Set to skip manage externals step")
+
 project (
   GEOSctm
   VERSION 1.0
   LANGUAGES Fortran CXX C)  # Note - CXX is required for ESMF
-
-set(geos_configuration "gcm" CACHE STRING "GEOS Configuration to build." FORCE)
-set_property(CACHE geos_configuration PROPERTY STRINGS gcm adas)
 
 enable_testing()
 
@@ -30,54 +37,19 @@ set (FV_PRECISION R8)
 # Set the default build type to release with debug info
 if (NOT CMAKE_BUILD_TYPE)
   message (STATUS "Setting build type to 'Debug' as none was specified.")
-  set (CMAKE_BUILD_TYPE Debug CACHE STRING "Choose the type of build." FORCE)
+  set (CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
   # Set the possible values of build type for cmake-gui
   set_property (CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS
     "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 endif ()
 
 list (APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/@cmake")
-list (APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/@cmake/check_compiler_support")
+set (BUILD_SHARED_LIBS OFF)
+set (ECBUILD_2_COMPAT_VALUE OFF)
+include (esma)
 
-include( ecbuild_system NO_POLICY_SCOPE )
 ecbuild_declare_project()
 
-include ("${CMAKE_Fortran_COMPILER_ID}")
-
-
-# include various macros that are used in the build process
-include (check_fortran_support)
-
-include (esma_check_if_debug)
-include (esma_set_this)
-include (esma_add_subdirectories)
-include (esma_add_library)
-include (esma_generate_automatic_code)
-include (esma_create_stub_component)
-include (esma_fortran_generator_list)
-
-include (UseProTeX)
-set (protex_flags -g -b -f)
-
-set (LATEX_COMPILER pdflatex)
-include (UseLatex)
-
-
-if (APPLE)
-  include(osx_extras)
-endif ()
-
-
-# OpenMP support
-find_package (OpenMP)
-
-# Threading support
-set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
-set(THREADS_PREFER_PTHREAD_FLAG TRUE)
-find_package(Threads REQUIRED)
-
-# Position independent code
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # Generic DFLAGS
 add_definitions(-Dsys${CMAKE_SYSTEM_NAME} -DESMA64)

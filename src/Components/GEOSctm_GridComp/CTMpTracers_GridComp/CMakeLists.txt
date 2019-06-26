@@ -1,9 +1,14 @@
 esma_set_this ()
 
-set (SRCS
-  CTM_pTracersGridCompMod.F90
-  CTM_pTracersStubCompMod.F90
-  )
+if (pTracers_MODE MATCHES "stub")
+  set (SRCS
+    CTM_pTracersStubCompMod.F90
+    )
+else ()
+  set (SRCS
+    CTM_pTracersGridCompMod.F90
+    )
+endif ()  
 
 esma_add_library (${this}
   SRCS ${SRCS}
