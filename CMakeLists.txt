@@ -2,11 +2,11 @@ cmake_minimum_required (VERSION 3.13)
 cmake_policy (SET CMP0053 NEW)
 cmake_policy (SET CMP0054 NEW)
 
+# Invoke checkout_ externals, but only the first time we
+# configure.  
 if (NOT SKIP_MANAGE_EXTERNALS)
   execute_process (
-    COMMAND "manage_externals/checkout_externals"
-    RESULTS_VARIABLE foo
-    OUTPUT_VARIABLE output
+    COMMAND "checkout_externals"
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     )
 endif ()
@@ -16,8 +16,6 @@ project (
   GEOSctm
   VERSION 1.0
   LANGUAGES Fortran CXX C)  # Note - CXX is required for ESMF
-
-enable_testing()
 
 if ("${PROJECT_SOURCE_DIR}" STREQUAL "${PROJECT_BINARY_DIR}")
    message(SEND_ERROR "In-source builds are disabled. Please
@@ -55,37 +53,8 @@ ecbuild_declare_project()
 add_definitions(-Dsys${CMAKE_SYSTEM_NAME} -DESMA64)
 
 
-# MPI Support - only invoked from Fortran sources in GEOS-5.
-# But some BASEDIR packages use MPI from C/C++.
-find_package (MPI REQUIRED)
-
-if (APPLE)
-  if (DEFINED ENV{MKLROOT})
-    set (MKL_Fortran)
-    find_package (MKL REQUIRED)
-  else ()
-    if ("${CMAKE_Fortran_COMPILER_ID}" MATCHES "GNU")
-      #USE FRAMEWORK
-      message(STATUS "Found macOS and gfortran, using framework Accelerate")
-      link_libraries("-framework Accelerate")
-    endif ()
-  endif ()
-else ()
-  find_package (MKL REQUIRED)
-endif ()
-
 add_definitions(${MPI_Fortran_COMPILE_FLAGS})
 include_directories(${MPI_Fortran_INCLUDE_PATH})
-
-# Unit testing
-set (PFUNIT OFF CACHE BOOL "Activate pfunit based tests")
-if (PFUNIT)
-   add_custom_target(tests COMMAND ${CMAKE_CTEST_COMMAND})
-endif ()
-
-# Baselibs ...
-include (FindBaselibs)
-
 
 # Recursively build subdirectories
 # List subdirectories
@@ -95,7 +64,3 @@ add_custom_target (doc
   COMMAND
   )
 
-# Need to copy various files into build directory.  Source tree cannot know where the build tree is ...
-#configure_file(${CMAKE_CURRENT_SOURCE_DIR}/g5_modules ${CMAKE_CURRENT_BINARY_DIR}/g5_modules COPYONLY)
-#configure_file(${CMAKE_CURRENT_SOURCE_DIR}/g5_modules ${CMAKE_CURRENT_BINARY_DIR}/bin/g5_modules COPYONLY)
-#configure_file(${CMAKE_CURRENT_SOURCE_DIR}/g5_modules.sh ${CMAKE_CURRENT_BINARY_DIR}/g5_modules.sh COPYONLY)
