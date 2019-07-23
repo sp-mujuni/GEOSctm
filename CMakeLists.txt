@@ -34,15 +34,13 @@ include (esma)
 
 ecbuild_declare_project()
 
-
 # Generic DFLAGS
+# These should be relocated and/or eliminated.
 add_definitions(-Dsys${CMAKE_SYSTEM_NAME} -DESMA64)
-
 add_definitions(${MPI_Fortran_COMPILE_FLAGS})
 include_directories(${MPI_Fortran_INCLUDE_PATH})
 
-# Recursively build subdirectories
-# List subdirectories
+# Recursively build source tree
+add_subdirectory (@env)
 add_subdirectory (src)
-
 
