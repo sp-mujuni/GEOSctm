@@ -94,6 +94,7 @@
       integer :: PTRA = -1
 
       logical :: enable_pTracers  = .FALSE.
+      logical :: do_ctmAdvection  = .FALSE.
       logical :: do_ctmConvection = .FALSE.
       logical :: do_ctmDiffusion  = .FALSE.
       character(len=ESMF_MAXSTR) :: metType ! MERRA2 or MERRA1 or FPIT or FP
@@ -165,6 +166,10 @@
                                      Default  = .FALSE.,                    &
                                      Label    = "do_ctmConvection:", __RC__ )
 
+      call ESMF_ConfigGetAttribute(configFile, do_ctmAdvection,             &
+                                     Default  = .TRUE.,                     &
+                                     Label    = "do_ctmAdvection:",  __RC__ )
+
       call ESMF_ConfigGetAttribute(configFile, do_ctmDiffusion,             &
                                      Default  = .FALSE.,                    &
                                      Label    = "do_ctmDiffusion:",  __RC__ )
@@ -183,6 +188,7 @@
          PRINT*, "-----             GEOS CTM Settings           -----"
          PRINT*, "---------------------------------------------------"
          PRINT*,'   Doing Passive Tracer?: ', enable_pTracers
+         PRINT*,'               Advection: ', do_ctmAdvection
          PRINT*,'              Convection: ', do_ctmConvection
          PRINT*,'               Diffusion: ', do_ctmDiffusion
          PRINT*,'     Meteological Fields: ', TRIM(metType)
@@ -704,16 +710,18 @@
       !--------
       ! advCore
       !--------
-      I=ADV3
+      IF (do_ctmAdvection) THEN
+         I=ADV3
 
-      call MAPL_TimerOn (STATE,GCNames(I))
-      call ESMF_GridCompRun (GCS(I),               &
-                           importState = GIM(I), &
-                           exportState = GEX(I), &
-                           clock       = CLOCK,  &
-                           userRC      = STATUS  )
-      VERIFY_(STATUS)
-      call MAPL_TimerOff(STATE,GCNames(I))
+         call MAPL_TimerOn (STATE,GCNames(I))
+         call ESMF_GridCompRun (GCS(I),               &
+                              importState = GIM(I), &
+                              exportState = GEX(I), &
+                              clock       = CLOCK,  &
+                              userRC      = STATUS  )
+         VERIFY_(STATUS)
+         call MAPL_TimerOff(STATE,GCNames(I))
+      END IF
 
       !-----------
       ! Convection

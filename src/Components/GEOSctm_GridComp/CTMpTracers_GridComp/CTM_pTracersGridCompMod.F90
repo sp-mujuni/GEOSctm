@@ -539,7 +539,7 @@ contains
 !BOC
 !
 ! ErrLog Variables
-      character(len=ESMF_MAXSTR)        :: IAm = "Run_"
+      character(len=ESMF_MAXSTR)        :: IAm
       integer                           :: STATUS
       character(len=ESMF_MAXSTR)        :: COMP_NAME
 ! Local derived types
@@ -596,22 +596,23 @@ contains
 
       !  Associate the Internal State fields with our legacy state 
       !  ---------------------------------------------------------
-      call MAPL_Get ( ggSTATE, INTERNALSPEC=InternalSpec, &
-                      INTERNAL_ESMF_STATE=internal, RC=STATUS  )
-      VERIFY_(STATUS)
+! mem - Only needed to check nSpc value
+!     call MAPL_Get ( ggSTATE, INTERNALSPEC=InternalSpec, &
+!                     INTERNAL_ESMF_STATE=internal, RC=STATUS  )
+!     VERIFY_(STATUS)
 
 
       nSpc = size(pTracers_STATE%tr(:))
 
       ! Consistency Checks
       !-------------------
-      ASSERT_ ( size(InternalSpec) == nSpc )
+!     ASSERT_ ( size(InternalSpec) == nSpc )
 
       IF (do_ComputeTracerMass) THEN
-         CALL MAPL_GetPointer(IMPORT, PLE,  'PLE', ALLOC = .TRUE., RC=STATUS)
+         CALL MAPL_GetPointer(IMPORT, PLE,  'PLE', RC=STATUS)
          VERIFY_(STATUS)
 
-         call MAPL_GetPointer(IMPORT, cellArea, 'AREA', ALLOC=.true., rc=status)
+         call MAPL_GetPointer(IMPORT, cellArea, 'AREA', rc=status)
          VERIFY_(STATUS)
 
          if ( MAPL_am_I_root() ) then
@@ -818,7 +819,7 @@ contains
       type (ESMF_GRID)           :: esmfGrid
 !
 ! !LOCAL VARIABLES:
-      INTEGER :: im, jm, lm, k, STATUS, RC
+      INTEGER :: im, jm, lm, k, k0, k1, STATUS, RC
       real, pointer, dimension(:,:,:)   ::  dp => null()
       real     , allocatable :: qsum(:,:)
       real*8                 :: totMass
@@ -826,12 +827,17 @@ contains
 !EOP
 !------------------------------------------------------------------------------
 !BOC
+
+
+      k0 = lbound(PLE,3)
+      k1 = ubound(PLE,3)
+
       im = size(tracerArray, 1)
       jm = size(tracerArray, 2)
       lm = size(tracerArray, 3)
 
       allocate( dp(im,jm,lm) )                      !  pressure thickness
-      dp(:,:,1:lm) = PLE(:,:,2:lm+1)-PLE(:,:,1:lm)
+      dp(:,:,1:lm) = PLE(:,:,k0+1:k1)-PLE(:,:,k0:k1-1)
 
       allocate( qsum(im,jm) )
       qsum = 0.0
