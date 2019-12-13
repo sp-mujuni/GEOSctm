@@ -881,11 +881,11 @@ while( $check == FALSE )
             set check = TRUE
             if( -e $HOME/.HISTORYrc ) /bin/rm $HOME/.HISTORYrc
             echo $HISTORYrc >                 $HOME/.HISTORYrc
-            /bin/cp -f $BINDIR/HISTORY.GEOSCTM.rc.tmpl $BINDIR/HISTORY.rc.tmpl
+            /bin/cp -f $ETCDIR/HISTORY.GEOSCTM.rc.tmpl $BINDIR/HISTORY.rc.tmpl
   endif
 
   if( "$HISTORYrc" != "Current" ) then
-       if( -f $HISTORYrc ) then
+       if( -f $ETCDIR/$HISTORYrc ) then
             set check = TRUE
             if( -e $HOME/.HISTORYrc ) /bin/rm $HOME/.HISTORYrc
             echo $HISTORYrc >                 $HOME/.HISTORYrc
@@ -1792,6 +1792,26 @@ else if ( $ctmGMI == TRUE ) then
     /bin/mv $EXPDIR/RC/Chem_Registry.rc $EXPDIR/RC/Chem_Registry.tmp
     cat $EXPDIR/RC/Chem_Registry.tmp | \
     awk '{ if ( $1 ~ "doing_XX" ) { sub(/no/, "yes" ) }; print }' > $EXPDIR/RC/Chem_Registry.rc
+
+#   Edit the Chem_Registry.rc to use the species appropriate to GMIchem
+#   -------------------------------------------------------------------
+
+    /bin/mv $EXPDIR/RC/Chem_Registry.rc $EXPDIR/RC/Chem_Registry.tmp
+    sed -e "s|nbins_XX_GMI|nbins_XX|" $EXPDIR/RC/Chem_Registry.tmp > $EXPDIR/RC/Chem_Registry.rc
+
+    /bin/mv $EXPDIR/RC/Chem_Registry.rc $EXPDIR/RC/Chem_Registry.tmp
+    sed -e "s|variable_table_XX_GMI|variable_table_XX|" $EXPDIR/RC/Chem_Registry.tmp > $EXPDIR/RC/Chem_Registry.rc
+
+    /bin/rm $EXPDIR/RC/Chem_Registry.tmp
+
+#   Change GMI_GridComp.rc until GMI datasets are moved to GMAO Ops share
+#   ---------------------------------------------------------------------
+
+    if( ${SITE} == 'NCCS' ) then
+     sed -e 's|EXTDATA|/discover/nobackup/projects/gmao/share/dasilva/fvInput|g' $EXPDIR/RC/GMI_GridComp.rc > $EXPDIR/RC/GMI_GridComp.tmp
+     /bin/mv -f $EXPDIR/RC/GMI_GridComp.tmp $EXPDIR/RC/GMI_GridComp.rc
+    endif
+  
 # Turn on GEOS-Chem
 # -----------
 else if ( $ctmGEOS_Chem == TRUE ) then
