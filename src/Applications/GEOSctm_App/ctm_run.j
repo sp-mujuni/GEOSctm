@@ -207,6 +207,7 @@ else
 endif
                              @CPEXEC -f  $HOMDIR/*.rc .
                              @CPEXEC -f  $HOMDIR/*.nml .
+                             @CPEXEC     $GEOSBIN/bundleParser.py .
 
                              cat fvcore_layout.rc >> input.nml
 
@@ -882,6 +883,9 @@ endif
 sed -i 's/QFED\/NRT/QFED/'             ${COMPNAME}_ExtData_${sYear}.rc
 sed -i 's/v2.5r1_0.1_deg/v2.5r1\/0.1/' ${COMPNAME}_ExtData_${sYear}.rc
 
+# Run bundleParser.py
+#---------------------
+python bundleParser.py
 
 # Link Boundary Conditions for Appropriate Date
 # ---------------------------------------------

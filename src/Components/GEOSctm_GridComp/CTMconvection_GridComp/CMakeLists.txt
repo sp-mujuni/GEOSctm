@@ -6,6 +6,7 @@ if (Convection_MODE MATCHES stub)
     GenericConvectionMethod_mod.F90
     GmiConvectionMethod_mod.F90
     convectiveTransport_mod.F90
+    CTM_rasCalculationsMod.F90
     )
 else ()
   set (SRCS
@@ -13,6 +14,7 @@ else ()
     GenericConvectionMethod_mod.F90
     GmiConvectionMethod_mod.F90
     convectiveTransport_mod.F90
+    CTM_rasCalculationsMod.F90
     )
 endif ()  
 

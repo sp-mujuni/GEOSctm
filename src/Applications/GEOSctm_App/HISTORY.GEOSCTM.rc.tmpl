@@ -11,6 +11,7 @@ COLLECTIONS:
 >>>HIST_GMICHEM<<<          'gmi_edge'
 >>>HIST_GMICHEM<<<          'gmi_inst'
 >>>HIST_GMICHEM<<<          'gmi_avrg'
+>>>HIST_GMICHEM<<<          'gmi_inc'
 >>>HIST_IdealizedPT<<<      'idealPT'
 >>>HIST_GEOSCHEMCHEM<<<     'tavg1_2d_chm_Nx'
 >>>HIST_GEOSCHEMCHEM<<<     'inst_geoschem'
@@ -417,6 +418,20 @@ COLLECTIONS:
                           'GMITTO3'       , 'GMICHEM' ,
                           'AIRDENS'       , 'CHEMENV' ,
                     ::
+
+>>>HIST_GMICHEM<<<  gmi_inc.template:   '%y4%m2%d2_%h2%n2z.nc4',
+>>>HIST_GMICHEM<<<  gmi_inc.archive:    '%c/Y%y4',
+>>>HIST_GMICHEM<<<  gmi_inc.format:     'CFIO',
+>>>HIST_GMICHEM<<<  gmi_inc.mode:       'time-averaged',
+>>>HIST_GMICHEM<<<  gmi_inc.conservative: 1,
+>>>HIST_GMICHEM<<<  gmi_inc.frequency:  240000,
+>>>HIST_GMICHEM<<<  gmi_inc.duration:   240000,
+>>>HIST_GMICHEM<<<  gmi_inc.ref_time:   000000,
+>>>HIST_GMICHEM<<<  gmi_inc.resolution: @HIST_IM @HIST_JM,
+>>>HIST_GMICHEM<<<  gmi_inc.fields:     'CHEMTRI%GMICHEM::N2O5IC'          , 'CHEMISTRY' ,     'N2O5_CHEMTEND' ,
+>>>HIST_GMICHEM<<<                      'CHEMTRI%GMICHEM::ClONO2IC'        , 'CHEMISTRY' ,   'CLONO2_CHEMTEND' ,
+>>>HIST_GMICHEM<<<                      'CHEMTRI%GMICHEM::HClIC'           , 'CHEMISTRY' ,      'HCL_CHEMTEND' ,
+>>>HIST_GMICHEM<<<                    ::
 
   tavg1_2d_chm_Nx.template:   '%y4%m2%d2_%h2%n2z.nc4',
   tavg1_2d_chm_Nx.archive:    '%c/Y%y4',

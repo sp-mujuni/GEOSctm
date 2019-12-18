@@ -574,7 +574,7 @@ if($gcNUM == 3) set ctmGMI = TRUE
 if($gcNUM == 4) set ctmGEOS_Chem = TRUE
 if($gcNUM == 5) set ctmIPT = TRUE
 
-if( $ctmGOCART == TRUE ) then
+if( $ctmGOCART == TRUE || $ctmGEOS_Chem == TRUE ) then
   set GOCART          = ""
   set GOCART_INTERNAL = "GOCART_INTERNAL"
   set HIST_GOCART     = ""
@@ -1516,7 +1516,11 @@ set LCARMA     = FALSE
 set LGMICHEM   = $ctmGMI
 set LGEOSCHEMCHEM   = $ctmGEOS_Chem
 set LSTRATCHEM = FALSE
-set LGOCART    = $ctmGOCART
+if ($ctmGEOS_Chem == TRUE) then
+  set LGOCART    = TRUE
+else
+  set LGOCART    = $ctmGOCART
+endif
 
 set RSNAMES = "LH2O LMAM LCARMA LGMICHEM LGEOSCHEMCHEM LSTRATCHEM LGOCART"
 set RSTYPES = "INTERNAL IMPORT"
@@ -1632,6 +1636,44 @@ if( $GEOSCTM_LM != 72 ) then
      end
 endif
 
+if ( $ctmGEOS_Chem == TRUE ) then
+
+# GEOS-Chem needs a recent BEGIN Date
+# -----------------------------------
+  sed -i 's/BEG_DATE.*/BEG_DATE:     19500101 000000/' $HOMDIR/CAP.rc
+
+#
+#  We will have the need for res-dependent settings in the future
+#
+## GEOS-Chem needs resolution-dependent settings
+## ---------------------------------------------
+#  if($CUBED == "TRUE") then
+#    setenv RES $GEOSCTM_IM
+#
+#    set RES_LINE = "`grep -i '${RES}.*OTD-LIS scaling' $EXPDIR/RC/HEMCO_Config.rc`"
+#    if ( $#RES_LINE == 1 ) then
+#      set RES_VAL = `echo $RES_LINE | cut -f2 -d:`
+#      sed -i "s/@OTD_LIS_SCALING/$RES_VAL/" $EXPDIR/RC/HEMCO_Config.rc
+#    else
+#      echo Expecting exactly 1 line for ${RES} OTD-LIS scaling.
+#      echo Please set @OTD_LIS_SCALING in $EXPDIR/RC/HEMCO_Config.rc
+#    endif
+#
+#    set RES_LINE = "`grep -i '${RES}.*Mass tuning factor' $EXPDIR/RC/HEMCO_Config.rc`"
+#    if ( $#RES_LINE == 1 ) then
+#      set RES_VAL = `echo $RES_LINE | cut -f2 -d:`
+#      sed -i "s/@MASS_TUNING_FACTOR/$RES_VAL/" $EXPDIR/RC/HEMCO_Config.rc
+#    else
+#      echo Expecting exactly 1 line for ${RES} Mass tuning factor.
+#      echo Please set @MASS_TUNING_FACTOR in $EXPDIR/RC/HEMCO_Config.rc
+#    endif
+#
+#  else
+#    echo Please set @OTD_LIS_SCALING and @MASS_TUNING_FACTOR in $EXPDIR/RC/HEMCO_Config.rc
+#  endif
+
+endif
+
 
 # Turn on PCHEM
 # -------------
@@ -1645,6 +1687,14 @@ endif
 # Turn on Passive Tracer
 # ---------------------
 if( $ctmTRACER == TRUE ) then
+    /bin/mv $EXPDIR/CTM_GridComp.rc $EXPDIR/CTM_GridComp.tmp
+    cat $EXPDIR/CTM_GridComp.tmp | \
+    awk '{ if ($1~"do_ctmConvection") { sub(/F/,"T") }; print }' > $EXPDIR/CTM_GridComp.rc
+
+    /bin/mv $EXPDIR/CTM_GridComp.rc $EXPDIR/CTM_GridComp.tmp
+    cat $EXPDIR/CTM_GridComp.tmp | \
+    awk '{ if ($1~"do_ctmDiffusion") { sub(/F/,"T") }; print }' > $EXPDIR/CTM_GridComp.rc
+
     /bin/mv $EXPDIR/RC/GEOS_ChemGridComp.rc $EXPDIR/RC/GEOS_ChemGridComp.tmp
     cat $EXPDIR/RC/GEOS_ChemGridComp.tmp | \
     awk '{ if ($1~"ENABLE_TR:") { sub(/FALSE/,"TRUE") }; print }' > $EXPDIR/RC/GEOS_ChemGridComp.rc
@@ -1817,7 +1867,7 @@ else if ( $ctmGMI == TRUE ) then
 else if ( $ctmGEOS_Chem == TRUE ) then
     /bin/mv $EXPDIR/CTM_GridComp.rc $EXPDIR/CTM_GridComp.tmp
     cat $EXPDIR/CTM_GridComp.tmp | \
-    awk '{ if ($1~"do_ctmConvection") { sub(/F/,"T") }; print }' > $EXPDIR/CTM_GridComp.rc
+    awk '{ if ($1~"do_ctmConvection") { sub(/T/,"F") }; print }' > $EXPDIR/CTM_GridComp.rc
 
     /bin/mv $EXPDIR/CTM_GridComp.rc $EXPDIR/CTM_GridComp.tmp
     cat $EXPDIR/CTM_GridComp.tmp | \
@@ -1826,10 +1876,6 @@ else if ( $ctmGEOS_Chem == TRUE ) then
     /bin/mv $EXPDIR/CTM_GridComp.rc $EXPDIR/CTM_GridComp.tmp
     cat $EXPDIR/CTM_GridComp.tmp | \
     awk '{ if ($1~"convecType") { sub(/2/,"1") }; print }' > $EXPDIR/CTM_GridComp.rc
-
-    /bin/mv $EXPDIR/RC/GEOS_ChemGridComp.rc $EXPDIR/RC/GEOS_ChemGridComp.tmp
-    cat $EXPDIR/RC/GEOS_ChemGridComp.tmp | \
-    awk '{ if ($1~"ENABLE_GOCART:") { sub(/FALSE/,"TRUE") }; print }' > $EXPDIR/RC/GEOS_ChemGridComp.rc
 
     /bin/mv $EXPDIR/RC/GEOS_ChemGridComp.rc $EXPDIR/RC/GEOS_ChemGridComp.tmp
     cat $EXPDIR/RC/GEOS_ChemGridComp.tmp | \
@@ -1855,7 +1901,21 @@ else if ( $ctmGEOS_Chem == TRUE ) then
     cat $EXPDIR/RC/GEOS_ChemGridComp.tmp | \
     awk '{ if ($1~"ENABLE_MATRIX:") { sub(/TRUE/,"FALSE") }; print }' > $EXPDIR/RC/GEOS_ChemGridComp.rc
 
+    if($AERO_PROVIDER == GOCART) then
+     /bin/mv $EXPDIR/RC/GEOS_ChemGridComp.rc $EXPDIR/RC/GEOS_ChemGridComp.tmp
+     cat $EXPDIR/RC/GEOS_ChemGridComp.tmp | \
+     awk '{ if ($1~"ENABLE_GOCART:") { sub(/FALSE/,"TRUE") }; print }' > $EXPDIR/RC/GEOS_ChemGridComp.rc
+    else
+     /bin/mv $EXPDIR/RC/GEOS_ChemGridComp.rc $EXPDIR/RC/GEOS_ChemGridComp.tmp
+     cat $EXPDIR/RC/GEOS_ChemGridComp.tmp | \
+     awk '{ if ($1~"ENABLE_GOCART:") { sub(/TRUE/,"FALSE") }; print }' > $EXPDIR/RC/GEOS_ChemGridComp.rc
+    endif
+
     if($AERO_PROVIDER == GOCART.data) then
+     /bin/mv $EXPDIR/RC/GEOS_ChemGridComp.rc $EXPDIR/RC/GEOS_ChemGridComp.tmp
+     cat $EXPDIR/RC/GEOS_ChemGridComp.tmp | \
+     awk '{ if ($1~"ENABLE_GOCART_DATA:") { sub(/FALSE/,"TRUE") }; print }' > $EXPDIR/RC/GEOS_ChemGridComp.rc
+    else
      /bin/mv $EXPDIR/RC/GEOS_ChemGridComp.rc $EXPDIR/RC/GEOS_ChemGridComp.tmp
      cat $EXPDIR/RC/GEOS_ChemGridComp.tmp | \
      awk '{ if ($1~"ENABLE_GOCART_DATA:") { sub(/TRUE/,"FALSE") }; print }' > $EXPDIR/RC/GEOS_ChemGridComp.rc

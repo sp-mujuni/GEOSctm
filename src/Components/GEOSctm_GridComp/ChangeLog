@@ -1,5 +1,20 @@
 GEOS-5 CTM ChangeLog
 
+2019-10-09 <michael.manyin@nasa.gov> Tag: Icarus-3_2_p9_CTM_MEM_16-r1
+        * CTM now has the option of computing RAS mass flux terms,
+          as implemented by Jules K.
+        * ctm_setup for TR - now turns on Convection and Turbulence
+        * ctm_setup for GEOS-Chem - now turns on GOCART and turns off GOCART.data
+
+2019-08-21 <michael.manyin@nasa.gov> Tag: Icarus-3_2_p9_CTM_MEM_16
+        * Includes all chemistry updates from CCM Icarus-3_2_p9_MEM_16
+
+2019-07-16 <michael.manyin@nasa.gov> Tag: Icarus-3_2_p9_CTM_MEM_15
+        * Includes all chemistry updates from CCM Icarus-3_2_p9_MEM_15
+
+2019-05-31 <michael.manyin@nasa.gov> Tag: Icarus-3_2_p9_CTM_MEM_14
+        * Includes all chemistry updates from CCM Icarus-3_2_p9_MEM_14
+
 2016-06-13 <jon.e.nielsen@nasa.gov> Tag: Heracles-5_2_p1_CTM
         * Includes M. Manyin's promotion of VegLai to Chem_Shared for GMI and TR,
           Valentina's StratChem updates present in 5_2_p1, and Anton's NI_GridComp
