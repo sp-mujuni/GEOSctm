@@ -1644,33 +1644,34 @@ if ( $ctmGEOS_Chem == TRUE ) then
 
 #
 #  We will have the need for res-dependent settings in the future
+#  (Currently GEOS-Chem fails if it cannot read these!?)
 #
-## GEOS-Chem needs resolution-dependent settings
-## ---------------------------------------------
-#  if($CUBED == "TRUE") then
-#    setenv RES $GEOSCTM_IM
-#
-#    set RES_LINE = "`grep -i '${RES}.*OTD-LIS scaling' $EXPDIR/RC/HEMCO_Config.rc`"
-#    if ( $#RES_LINE == 1 ) then
-#      set RES_VAL = `echo $RES_LINE | cut -f2 -d:`
-#      sed -i "s/@OTD_LIS_SCALING/$RES_VAL/" $EXPDIR/RC/HEMCO_Config.rc
-#    else
-#      echo Expecting exactly 1 line for ${RES} OTD-LIS scaling.
-#      echo Please set @OTD_LIS_SCALING in $EXPDIR/RC/HEMCO_Config.rc
-#    endif
-#
-#    set RES_LINE = "`grep -i '${RES}.*Mass tuning factor' $EXPDIR/RC/HEMCO_Config.rc`"
-#    if ( $#RES_LINE == 1 ) then
-#      set RES_VAL = `echo $RES_LINE | cut -f2 -d:`
-#      sed -i "s/@MASS_TUNING_FACTOR/$RES_VAL/" $EXPDIR/RC/HEMCO_Config.rc
-#    else
-#      echo Expecting exactly 1 line for ${RES} Mass tuning factor.
-#      echo Please set @MASS_TUNING_FACTOR in $EXPDIR/RC/HEMCO_Config.rc
-#    endif
-#
-#  else
-#    echo Please set @OTD_LIS_SCALING and @MASS_TUNING_FACTOR in $EXPDIR/RC/HEMCO_Config.rc
-#  endif
+# GEOS-Chem needs resolution-dependent settings
+# ---------------------------------------------
+  if($CUBED == "TRUE") then
+    setenv RES $GEOSCTM_IM
+
+    set RES_LINE = "`grep -i '${RES}.*OTD-LIS scaling' $EXPDIR/RC/HEMCO_Config.rc`"
+    if ( $#RES_LINE == 1 ) then
+      set RES_VAL = `echo $RES_LINE | cut -f2 -d:`
+      sed -i "s/@OTD_LIS_SCALING/$RES_VAL/" $EXPDIR/RC/HEMCO_Config.rc
+    else
+      echo Expecting exactly 1 line for ${RES} OTD-LIS scaling.
+      echo Please set @OTD_LIS_SCALING in $EXPDIR/RC/HEMCO_Config.rc
+    endif
+
+    set RES_LINE = "`grep -i '${RES}.*Mass tuning factor' $EXPDIR/RC/HEMCO_Config.rc`"
+    if ( $#RES_LINE == 1 ) then
+      set RES_VAL = `echo $RES_LINE | cut -f2 -d:`
+      sed -i "s/@MASS_TUNING_FACTOR/$RES_VAL/" $EXPDIR/RC/HEMCO_Config.rc
+    else
+      echo Expecting exactly 1 line for ${RES} Mass tuning factor.
+      echo Please set @MASS_TUNING_FACTOR in $EXPDIR/RC/HEMCO_Config.rc
+    endif
+
+  else
+    echo Please set @OTD_LIS_SCALING and @MASS_TUNING_FACTOR in $EXPDIR/RC/HEMCO_Config.rc
+  endif
 
 endif
 
