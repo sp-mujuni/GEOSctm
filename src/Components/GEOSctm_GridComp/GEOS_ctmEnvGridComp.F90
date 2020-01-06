@@ -14,6 +14,7 @@
       use ESMF
       use MAPL_Mod
       use FV_StateMod, only : calcCourantNumberMassFlux => fv_computeMassFluxes
+      use fv_arrays_mod , only: FVPRC
       use m_set_eta,  only : set_eta
 
       implicit none
@@ -865,7 +866,7 @@
 
       integer :: km, k, is, ie, js, je, lm, ik, nc
       integer :: ndt, isd, ied, jsd, jed, i, j, l
-      real(r8) :: DT
+      real(FVPRC) :: DT
 
       ! Get the target components name and set-up traceback handle.
       ! -----------------------------------------------------------

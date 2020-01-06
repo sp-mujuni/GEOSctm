@@ -48,52 +48,31 @@ endif
 
 # Set Current Working Path to ctm_setup
 # -------------------------------------
-set CTMSETUP = `which $0`
-set root = `echo $CTMSETUP | cut -d / -f1`
-if($root == . ) set CTMSETUP = `echo $cwd`/ctm_setup
-set root = `echo $CTMSETUP | cut -b1`
-if( "$root" != "/" ) set CTMSETUP = `echo $cwd`/$CTMSETUP
+setenv ARCH `uname -s`
+if ($ARCH == Darwin) then
+   set FINDPATH = realpath
+else
+   set FINDPATH = 'readlink -f'
+endif
+set CTMSETUP = `$FINDPATH $0`
+set BINDIR   = `dirname $CTMSETUP`
+set GEOSDEF  = `dirname $BINDIR`
+set ETCDIR   = ${GEOSDEF}/etc
 
-
-# Set Default GEOS Build Directory
-# --------------------------------
-@ n = 1
-set root = `echo $CTMSETUP | cut -d / -f$n`
-while( .$root == . )
-@ n = $n + 1
-set root = `echo $CTMSETUP | cut -d / -f$n`
-end
-
-set GEOSDEF = ''
-while( $root != 'src' )
-set GEOSDEF = `echo ${GEOSDEF}/${root}`
-@ n = $n + 1
-set root = `echo $CTMSETUP | cut -d / -f$n`
-end
-
-
-# Set Applications Directory
-# --------------------------
-@ n = 1
-set root = `echo $CTMSETUP | cut -d / -f$n`
-while( .$root == . )
-@ n = $n + 1
-set root = `echo $CTMSETUP | cut -d / -f$n`
-end
-
-set APPDIR = ''
-while( $root != 'ctm_setup' )
-set APPDIR = `echo ${APPDIR}/${root}`
-@ n = $n + 1
-set root = `echo $CTMSETUP | cut -d / -f$n`
-end
+# Test if GEOSgcm.x is here which means you are in install directory
+if (! -x GEOSctm.x) then
+   echo "You are trying to run $0 in the Applications/GEOSgcm_App directory"
+   echo "This is no longer supported. Please run from the bin/ directory"
+   echo "in your installation"
+   exit 1
+endif
 
 #######################################################################
 #                   Test for Command Line Flags
 #######################################################################
 
 # Set default behavior of switches
-set NOCVS = FALSE
+set NOCVS = TRUE
 set GPU   = FALSE
 
 while ( $#argv > 0 )
@@ -131,7 +110,7 @@ end
 #######################################################################
 
 setenv NODE `uname -n`
-setenv SITE `$GEOSDEF/src/g5_modules site`
+setenv SITE `awk '{print $2}' $ETCDIR/SITE.rc`
 
 if ( $SITE != 'NCCS' && $SITE != 'NAS' ) then
    set NOCVS = TRUE
@@ -168,7 +147,7 @@ endif
 #                 Test for Compiler and MPI Setup
 #######################################################################
 
-set BASEDIR = `$GEOSDEF/src/g5_modules basedir`
+setenv BASEDIR `awk '{print $2}' $ETCDIR/BASEDIR.rc`
 
 if ( `echo $BASEDIR | grep -i ifort` != '') then
    set COMPILER = ifort
@@ -230,7 +209,7 @@ if( $WORD !=  $EXPDSC ) set EXPDSC = `echo ${EXPDSC}_${WORD}`
 end
 
 CTMTAG:
-set CTMTAG = `cat .GEOSCTM_VERSION`
+set CTMTAG = `cat ${ETCDIR}/.GEOSCTM_VERSION`
 #echo "${C1}CVS BASE Source Tag${CN} used for Experiment: ${C2}${CTMTAG}${CN}"
 
 #######################################################################
@@ -595,7 +574,7 @@ if($gcNUM == 3) set ctmGMI = TRUE
 if($gcNUM == 4) set ctmGEOS_Chem = TRUE
 if($gcNUM == 5) set ctmIPT = TRUE
 
-if( $ctmGOCART == TRUE ) then
+if( $ctmGOCART == TRUE || $ctmGEOS_Chem == TRUE ) then
   set GOCART          = ""
   set GOCART_INTERNAL = "GOCART_INTERNAL"
   set HIST_GOCART     = ""
@@ -763,9 +742,6 @@ endif
 # per task as a good default
 @ POST_NPES = $POST_NDS * 16
 
-setenv ARCH `   uname`
-setenv SITE `$GEOSDEF/src/g5_modules site`
-
               setenv     RUN_N  `echo $EXPID | cut -b1-11`_RUN                         # RUN      Job Name
               setenv     RUN_FN `echo $EXPID | cut -b1-11`_FCST                        # Forecast Job Name
               setenv    POST_N  `echo $EXPID | cut -b1-10`_POST                        # POST     Job Name
@@ -898,54 +874,47 @@ while( $check == FALSE )
   echo "Hit ENTER to use Default Tag/Location: (${C2}${HISTORYrc}${CN})"
   set   NUHISTORY  = $<
   if( .$NUHISTORY != . ) set HISTORYrc = $NUHISTORY
-  if( -e $APPDIR/HISTORY.rc.hold ) /bin/mv -f $APPDIR/HISTORY.rc.hold $APPDIR/HISTORY.rc.tmpl
-  if( -e $APPDIR/HISTORY.rc.tmpl ) /bin/mv -f $APPDIR/HISTORY.rc.tmpl $APPDIR/HISTORY.rc.hold
+  if( -e $BINDIR/HISTORY.rc.hold ) /bin/mv -f $BINDIR/HISTORY.rc.hold $BINDIR/HISTORY.rc.tmpl
+  if( -e $BINDIR/HISTORY.rc.tmpl ) /bin/mv -f $BINDIR/HISTORY.rc.tmpl $BINDIR/HISTORY.rc.hold
 
   if( "$HISTORYrc" == "Current" ) then
             set check = TRUE
             if( -e $HOME/.HISTORYrc ) /bin/rm $HOME/.HISTORYrc
             echo $HISTORYrc >                 $HOME/.HISTORYrc
-            /bin/cp -f $APPDIR/HISTORY.GEOSCTM.rc.tmpl $APPDIR/HISTORY.rc.tmpl
+            /bin/cp -f $ETCDIR/HISTORY.GEOSCTM.rc.tmpl $BINDIR/HISTORY.rc.tmpl
   endif
 
   if( "$HISTORYrc" != "Current" ) then
-       if( -f $HISTORYrc ) then
+       if( -f $ETCDIR/$HISTORYrc ) then
             set check = TRUE
             if( -e $HOME/.HISTORYrc ) /bin/rm $HOME/.HISTORYrc
             echo $HISTORYrc >                 $HOME/.HISTORYrc
-            /bin/cp -f $HISTORYrc $APPDIR/HISTORY.rc.tmp1
+            /bin/cp -f $ETCDIR/$HISTORYrc $BINDIR/HISTORY.rc.tmp1
 
-            set  EXPID_old = `grep  "EXPID:" $APPDIR/HISTORY.rc.tmp1 | cut -d: -f2`
-            set EXPDSC_old = `grep "EXPDSC:" $APPDIR/HISTORY.rc.tmp1 | cut -d: -f2`
+            set  EXPID_old = `grep  "EXPID:" $BINDIR/HISTORY.rc.tmp1 | cut -d: -f2`
+            set EXPDSC_old = `grep "EXPDSC:" $BINDIR/HISTORY.rc.tmp1 | cut -d: -f2`
 
             /bin/rm -f command
             set  string = "EXPID:"
-            echo cat $APPDIR/HISTORY.rc.tmp1 \| awk \'\{if \( \$1 \~ \"${string}\" \) \
-                 \{sub \( \"${EXPID_old}\" , \"${EXPID}\"  \)\;print\} else print\}\' \> $APPDIR/HISTORY.rc.tmpl > command
+            echo cat $BINDIR/HISTORY.rc.tmp1 \| awk \'\{if \( \$1 \~ \"${string}\" \) \
+                 \{sub \( \"${EXPID_old}\" , \"${EXPID}\"  \)\;print\} else print\}\' \> $BINDIR/HISTORY.rc.tmpl > command
             chmod +x   command
                      ./command
             /bin/rm -f command
-            /bin/mv -f $APPDIR/HISTORY.rc.tmpl $APPDIR/HISTORY.rc.tmp1
-                   cat $APPDIR/HISTORY.rc.tmp1 | sed -e "s|${EXPDSC_old}|${EXPDSC}|g" > $APPDIR/HISTORY.rc.tmpl
-            /bin/rm -f $APPDIR/HISTORY.rc.tmp1
+            /bin/mv -f $BINDIR/HISTORY.rc.tmpl $BINDIR/HISTORY.rc.tmp1
+                   cat $BINDIR/HISTORY.rc.tmp1 | sed -e "s|${EXPDSC_old}|${EXPDSC}|g" > $BINDIR/HISTORY.rc.tmpl
+            /bin/rm -f $BINDIR/HISTORY.rc.tmp1
 
        else if( -e $HISTORYrc/HISTORY.GEOSCTM.rc.tmpl ) then
             set check = TRUE
             if( -e $HOME/.HISTORYrc ) /bin/rm $HOME/.HISTORYrc
             echo $HISTORYrc >                 $HOME/.HISTORYrc
-            /bin/cp -f $HISTORYrc/HISTORY.GEOSCTM.rc.tmpl $APPDIR/HISTORY.rc.tmpl
+            /bin/cp -f $HISTORYrc/HISTORY.GEOSCTM.rc.tmpl $BINDIR/HISTORY.rc.tmpl
        else
-           cvs upd -r $HISTORYrc -p $APPDIR/HISTORY.GEOSCTM.rc.tmpl > $APPDIR/HISTORY.rc.tmpl
-           if( $status != 0 ) then
-            echo " "
-            echo "\!\! ERROR in using $HISTORYrc as a cvs tag or directory/filename. \!\!"
-            echo "\!\! Please check cvs connectivity or $HISTORYrc syntax. \!\!"
-            echo " "
-           else
-            set check = TRUE
-            if( -e $HOME/.HISTORYrc ) /bin/rm $HOME/.HISTORYrc
-            echo $HISTORYrc >                 $HOME/.HISTORYrc
-           endif
+            echo "This condition is based on updating HISTORY.AGCM.rc.tmpl with CVS"
+            echo "This has no equivalent in git at present. Please contact Matt"
+            echo "Thompson or Larry Takacs to help resolve this."
+            exit 2
        endif
   endif
 end
@@ -1071,7 +1040,7 @@ setenv CNVDIR $EXPDIR/convert
 
 # GEOSctm Build Directory
 # ------------------------
-  echo "Enter Location for ${C1}Build${CN} directory containing:  src/ Linux/ etc..."
+  echo "Enter Location for ${C1}Build${CN} directory containing:  bin/ etc/ include/ etc..."
   echo "Hit ENTER to use Default Location:"
   echo "----------------------------------"
   echo "Default:  ${C2}${GEOSDEF}${CN}"
@@ -1086,7 +1055,7 @@ setenv CNVDIR $EXPDIR/convert
 GEOSDIR:
 while( $check == FALSE )
 
-  if(! (-e $GEOSDIR/Linux || -e $GEOSDIR/Darwin) ) then
+  if(! (-e $GEOSDIR/bin ) ) then
        echo " "
        echo "\!\! ${C1}WARNING${CN} \!\!"
        echo "\!\! This Sandbox has not been built"
@@ -1112,10 +1081,11 @@ while( $check == FALSE )
   endif
 end
 
-setenv GEOSSRC  ${GEOSDIR}/src
-setenv GEOSBIN  ${GEOSDIR}/$ARCH/bin
-setenv GEOSUTIL ${GEOSSRC}/GMAO_Shared/GEOS_Util
-setenv CTMVER   `cat ${GEOSSRC}/Applications/GEOSctm_App/.GEOSCTM_VERSION`
+setenv GEOSSRC  ${GEOSDIR}
+setenv GEOSBIN  ${GEOSDIR}/bin
+setenv GEOSETC  ${GEOSDIR}/etc
+setenv GEOSUTIL ${GEOSSRC}
+setenv CTMVER   `cat ${GEOSETC}/.GEOSCTM_VERSION`
 
 #######################################################################
 #                    Check for Group ID Sponsor Code
@@ -1147,15 +1117,15 @@ echo $GROUP > $HOME/.GROUProot
 #      Copy Model Executable and RC Files to Experiment Directory
 #######################################################################
 
-  mkdir -p                                                  $EXPDIR/RC
-  rsync -ax                  $GEOSDIR/$ARCH/etc/*.rc        $EXPDIR/RC
+  mkdir -p                                                   $EXPDIR/RC
+  rsync -ax                  $GEOSDIR/etc/*.rc               $EXPDIR/RC
   if( .$EMISSIONS != . ) then
-                     /bin/cp $GEOSDIR/$ARCH/etc/$EMISSIONS/*.rc $EXPDIR/RC
+                     /bin/cp $GEOSDIR/etc/$EMISSIONS/*.rc    $EXPDIR/RC
   else
     set EMISSIONS = g5chem
   endif
 
-  if ( -e $GEOSDIR/$ARCH/bin/GEOSctm.x ) rsync -avx $GEOSDIR/$ARCH/bin/GEOSctm.x $EXPDIR
+  if ( -e $GEOSBIN/GEOSctm.x ) rsync -avx $GEOSBIN/GEOSctm.x $EXPDIR
 
 #######################################################################
 #                      Create SETENV Commands
@@ -1308,38 +1278,6 @@ endif
 #               Create Local Scripts and Resource Files
 #######################################################################
 
-set FILES = "ctm_run.j          \
-             ctm_post.j         \
-             ctm_archive.j      \
-             ctm_regress.j      \
-             ctm_convert.j      \
-             ctm_plot.tmpl      \
-             ctm_quickplot.csh  \
-             ctm_moveplot.j     \
-             CAP.rc.tmpl        \
-             GEOSCTM.rc.tmpl       \
-             HISTORY.rc.tmpl    \
-             CTM_GridComp.rc.tmpl \
-             pTracers_GridComp.rc.tmpl \
-             FP_ExtData.rc.tmpl \
-             FPIT_ExtData.rc.tmpl \
-             MERRA1_ExtData.rc.tmpl \
-             MERRA2_ExtData.rc.tmpl "
-set FILES = `echo $FILES`
-
-if($CUBED == "TRUE") then
-set FILES = "$FILES \
-             fvcore_layout.rc"
-set FILES = `echo $FILES`
-endif
-
-echo " "
-foreach FILE ($FILES)
-
-/bin/rm -f $HOMDIR/tmpfile
-/bin/rm -f $HOMDIR/sedfile
-/bin/rm -f $HOMDIR/$FILE
-cat        $APPDIR/$FILE > $HOMDIR/tmpfile
 cat >      $HOMDIR/sedfile << EOF
 /@SETENVS/ {
 t success
@@ -1403,6 +1341,7 @@ s?@SITE?$SITE?g
 s?@GEOSDIR?$GEOSDIR?g
 s?@GEOSSRC?$GEOSSRC?g
 s?@GEOSBIN?$GEOSBIN?g
+s?@GEOSETC?$GEOSETC?g
 s?@GEOSUTIL?$GEOSUTIL?g
 s?@RUN_CMD?$RUN_CMD?g
 
@@ -1498,11 +1437,57 @@ s/@GRID_FILE/$GRID_FILE/g
 EOF
 endif
 
-sed -f $HOMDIR/sedfile $HOMDIR/tmpfile > $HOMDIR/$FILE
+set FILES = "ctm_run.j          \
+             ctm_post.j         \
+             ctm_archive.j      \
+             ctm_regress.j      \
+             ctm_convert.j      \
+             ctm_plot.tmpl      \
+             ctm_quickplot.csh  \
+             ctm_moveplot.j     \
+             CAP.rc.tmpl        \
+             GEOSCTM.rc.tmpl       \
+             HISTORY.rc.tmpl    \
+             CTM_GridComp.rc.tmpl \
+             pTracers_GridComp.rc.tmpl \
+             FP_ExtData.rc.tmpl \
+             FPIT_ExtData.rc.tmpl \
+             MERRA1_ExtData.rc.tmpl \
+             MERRA2_ExtData.rc.tmpl "
+set FILES = `echo $FILES`
 
-echo "Creating ${C1}${FILE}${CN} for Experiment: $EXPID "
-chmod 755 $HOMDIR/$FILE
+if($CUBED == "TRUE") then
+set FILES = "$FILES \
+             fvcore_layout.rc"
+set FILES = `echo $FILES`
+endif
+
+echo " "
+
+# Operate on files in BINDIR
+
+foreach FILE ($FILES)
+
+   /bin/rm -f $HOMDIR/tmpfile
+   /bin/rm -f $HOMDIR/$FILE
+
+   if (      -e $BINDIR/$FILE ) then
+      cat       $BINDIR/$FILE > $HOMDIR/tmpfile
+   else if ( -e $ETCDIR/$FILE ) then
+      cat       $ETCDIR/$FILE > $HOMDIR/tmpfile
+   else
+      echo "ERROR! Cannot find $FILE in $BINDIR or $ETCDIR!"
+      exit 2
+   endif
+
+
+   sed -f $HOMDIR/sedfile $HOMDIR/tmpfile > $HOMDIR/$FILE
+
+   echo "Creating ${C1}${FILE}${CN} for Experiment: $EXPID "
+   chmod 755 $HOMDIR/$FILE
+
 end
+
 /bin/rm -f $HOMDIR/SETENV.commands
 
 if ($GPU == "TRUE") then
@@ -1510,10 +1495,10 @@ if ($GPU == "TRUE") then
 /bin/rm -f $HOMDIR/GPUEND.commands
 endif
 
-if(     -e $APPDIR/HISTORY.rc.hold ) then
-/bin/mv -f $APPDIR/HISTORY.rc.hold $APPDIR/HISTORY.rc.tmpl
+if(     -e $BINDIR/HISTORY.rc.hold ) then
+/bin/mv -f $BINDIR/HISTORY.rc.hold $BINDIR/HISTORY.rc.tmpl
 else
-/bin/rm -f $APPDIR/HISTORY.rc.tmpl
+/bin/rm -f $BINDIR/HISTORY.rc.tmpl
 endif
 
 echo $HOMDIR > $EXPDIR/.HOMDIR
@@ -1531,7 +1516,11 @@ set LCARMA     = FALSE
 set LGMICHEM   = $ctmGMI
 set LGEOSCHEMCHEM   = $ctmGEOS_Chem
 set LSTRATCHEM = FALSE
-set LGOCART    = $ctmGOCART
+if ($ctmGEOS_Chem == TRUE) then
+  set LGOCART    = TRUE
+else
+  set LGOCART    = $ctmGOCART
+endif
 
 set RSNAMES = "LH2O LMAM LCARMA LGMICHEM LGEOSCHEMCHEM LSTRATCHEM LGOCART"
 set RSTYPES = "INTERNAL IMPORT"
@@ -1647,6 +1636,45 @@ if( $GEOSCTM_LM != 72 ) then
      end
 endif
 
+if ( $ctmGEOS_Chem == TRUE ) then
+
+# GEOS-Chem needs a recent BEGIN Date
+# -----------------------------------
+  sed -i 's/BEG_DATE.*/BEG_DATE:     19500101 000000/' $HOMDIR/CAP.rc
+
+#
+#  We will have the need for res-dependent settings in the future
+#  (Currently GEOS-Chem fails if it cannot read these!?)
+#
+# GEOS-Chem needs resolution-dependent settings
+# ---------------------------------------------
+  if($CUBED == "TRUE") then
+    setenv RES $GEOSCTM_IM
+
+    set RES_LINE = "`grep -i '${RES}.*OTD-LIS scaling' $EXPDIR/RC/HEMCO_Config.rc`"
+    if ( $#RES_LINE == 1 ) then
+      set RES_VAL = `echo $RES_LINE | cut -f2 -d:`
+      sed -i "s/@OTD_LIS_SCALING/$RES_VAL/" $EXPDIR/RC/HEMCO_Config.rc
+    else
+      echo Expecting exactly 1 line for ${RES} OTD-LIS scaling.
+      echo Please set @OTD_LIS_SCALING in $EXPDIR/RC/HEMCO_Config.rc
+    endif
+
+    set RES_LINE = "`grep -i '${RES}.*Mass tuning factor' $EXPDIR/RC/HEMCO_Config.rc`"
+    if ( $#RES_LINE == 1 ) then
+      set RES_VAL = `echo $RES_LINE | cut -f2 -d:`
+      sed -i "s/@MASS_TUNING_FACTOR/$RES_VAL/" $EXPDIR/RC/HEMCO_Config.rc
+    else
+      echo Expecting exactly 1 line for ${RES} Mass tuning factor.
+      echo Please set @MASS_TUNING_FACTOR in $EXPDIR/RC/HEMCO_Config.rc
+    endif
+
+  else
+    echo Please set @OTD_LIS_SCALING and @MASS_TUNING_FACTOR in $EXPDIR/RC/HEMCO_Config.rc
+  endif
+
+endif
+
 
 # Turn on PCHEM
 # -------------
@@ -1660,6 +1688,14 @@ endif
 # Turn on Passive Tracer
 # ---------------------
 if( $ctmTRACER == TRUE ) then
+    /bin/mv $EXPDIR/CTM_GridComp.rc $EXPDIR/CTM_GridComp.tmp
+    cat $EXPDIR/CTM_GridComp.tmp | \
+    awk '{ if ($1~"do_ctmConvection") { sub(/F/,"T") }; print }' > $EXPDIR/CTM_GridComp.rc
+
+    /bin/mv $EXPDIR/CTM_GridComp.rc $EXPDIR/CTM_GridComp.tmp
+    cat $EXPDIR/CTM_GridComp.tmp | \
+    awk '{ if ($1~"do_ctmDiffusion") { sub(/F/,"T") }; print }' > $EXPDIR/CTM_GridComp.rc
+
     /bin/mv $EXPDIR/RC/GEOS_ChemGridComp.rc $EXPDIR/RC/GEOS_ChemGridComp.tmp
     cat $EXPDIR/RC/GEOS_ChemGridComp.tmp | \
     awk '{ if ($1~"ENABLE_TR:") { sub(/FALSE/,"TRUE") }; print }' > $EXPDIR/RC/GEOS_ChemGridComp.rc
@@ -1807,12 +1843,32 @@ else if ( $ctmGMI == TRUE ) then
     /bin/mv $EXPDIR/RC/Chem_Registry.rc $EXPDIR/RC/Chem_Registry.tmp
     cat $EXPDIR/RC/Chem_Registry.tmp | \
     awk '{ if ( $1 ~ "doing_XX" ) { sub(/no/, "yes" ) }; print }' > $EXPDIR/RC/Chem_Registry.rc
+
+#   Edit the Chem_Registry.rc to use the species appropriate to GMIchem
+#   -------------------------------------------------------------------
+
+    /bin/mv $EXPDIR/RC/Chem_Registry.rc $EXPDIR/RC/Chem_Registry.tmp
+    sed -e "s|nbins_XX_GMI|nbins_XX|" $EXPDIR/RC/Chem_Registry.tmp > $EXPDIR/RC/Chem_Registry.rc
+
+    /bin/mv $EXPDIR/RC/Chem_Registry.rc $EXPDIR/RC/Chem_Registry.tmp
+    sed -e "s|variable_table_XX_GMI|variable_table_XX|" $EXPDIR/RC/Chem_Registry.tmp > $EXPDIR/RC/Chem_Registry.rc
+
+    /bin/rm $EXPDIR/RC/Chem_Registry.tmp
+
+#   Change GMI_GridComp.rc until GMI datasets are moved to GMAO Ops share
+#   ---------------------------------------------------------------------
+
+    if( ${SITE} == 'NCCS' ) then
+     sed -e 's|EXTDATA|/discover/nobackup/projects/gmao/share/dasilva/fvInput|g' $EXPDIR/RC/GMI_GridComp.rc > $EXPDIR/RC/GMI_GridComp.tmp
+     /bin/mv -f $EXPDIR/RC/GMI_GridComp.tmp $EXPDIR/RC/GMI_GridComp.rc
+    endif
+  
 # Turn on GEOS-Chem
 # -----------
 else if ( $ctmGEOS_Chem == TRUE ) then
     /bin/mv $EXPDIR/CTM_GridComp.rc $EXPDIR/CTM_GridComp.tmp
     cat $EXPDIR/CTM_GridComp.tmp | \
-    awk '{ if ($1~"do_ctmConvection") { sub(/F/,"T") }; print }' > $EXPDIR/CTM_GridComp.rc
+    awk '{ if ($1~"do_ctmConvection") { sub(/T/,"F") }; print }' > $EXPDIR/CTM_GridComp.rc
 
     /bin/mv $EXPDIR/CTM_GridComp.rc $EXPDIR/CTM_GridComp.tmp
     cat $EXPDIR/CTM_GridComp.tmp | \
@@ -1821,10 +1877,6 @@ else if ( $ctmGEOS_Chem == TRUE ) then
     /bin/mv $EXPDIR/CTM_GridComp.rc $EXPDIR/CTM_GridComp.tmp
     cat $EXPDIR/CTM_GridComp.tmp | \
     awk '{ if ($1~"convecType") { sub(/2/,"1") }; print }' > $EXPDIR/CTM_GridComp.rc
-
-    /bin/mv $EXPDIR/RC/GEOS_ChemGridComp.rc $EXPDIR/RC/GEOS_ChemGridComp.tmp
-    cat $EXPDIR/RC/GEOS_ChemGridComp.tmp | \
-    awk '{ if ($1~"ENABLE_GOCART:") { sub(/FALSE/,"TRUE") }; print }' > $EXPDIR/RC/GEOS_ChemGridComp.rc
 
     /bin/mv $EXPDIR/RC/GEOS_ChemGridComp.rc $EXPDIR/RC/GEOS_ChemGridComp.tmp
     cat $EXPDIR/RC/GEOS_ChemGridComp.tmp | \
@@ -1850,7 +1902,21 @@ else if ( $ctmGEOS_Chem == TRUE ) then
     cat $EXPDIR/RC/GEOS_ChemGridComp.tmp | \
     awk '{ if ($1~"ENABLE_MATRIX:") { sub(/TRUE/,"FALSE") }; print }' > $EXPDIR/RC/GEOS_ChemGridComp.rc
 
+    if($AERO_PROVIDER == GOCART) then
+     /bin/mv $EXPDIR/RC/GEOS_ChemGridComp.rc $EXPDIR/RC/GEOS_ChemGridComp.tmp
+     cat $EXPDIR/RC/GEOS_ChemGridComp.tmp | \
+     awk '{ if ($1~"ENABLE_GOCART:") { sub(/FALSE/,"TRUE") }; print }' > $EXPDIR/RC/GEOS_ChemGridComp.rc
+    else
+     /bin/mv $EXPDIR/RC/GEOS_ChemGridComp.rc $EXPDIR/RC/GEOS_ChemGridComp.tmp
+     cat $EXPDIR/RC/GEOS_ChemGridComp.tmp | \
+     awk '{ if ($1~"ENABLE_GOCART:") { sub(/TRUE/,"FALSE") }; print }' > $EXPDIR/RC/GEOS_ChemGridComp.rc
+    endif
+
     if($AERO_PROVIDER == GOCART.data) then
+     /bin/mv $EXPDIR/RC/GEOS_ChemGridComp.rc $EXPDIR/RC/GEOS_ChemGridComp.tmp
+     cat $EXPDIR/RC/GEOS_ChemGridComp.tmp | \
+     awk '{ if ($1~"ENABLE_GOCART_DATA:") { sub(/FALSE/,"TRUE") }; print }' > $EXPDIR/RC/GEOS_ChemGridComp.rc
+    else
      /bin/mv $EXPDIR/RC/GEOS_ChemGridComp.rc $EXPDIR/RC/GEOS_ChemGridComp.tmp
      cat $EXPDIR/RC/GEOS_ChemGridComp.tmp | \
      awk '{ if ($1~"ENABLE_GOCART_DATA:") { sub(/TRUE/,"FALSE") }; print }' > $EXPDIR/RC/GEOS_ChemGridComp.rc
@@ -1985,6 +2051,12 @@ if( -e $HOMDIR/sedfile ) /bin/rm $HOMDIR/sedfile
 #######################################################################
 
 if ( $NOCVS != "TRUE" ) then
+
+echo "ERROR! Repository managment is not supported yet in this model"
+echo "       due to the move to git. If this section is reached,"
+echo "       something has gone wrong. Please contact Matt Thompson"
+echo "       or Larry Takacs"
+exit 3
 
 # Make a src directory under EXPDIR to hold current Experiment files
 # Note:  Sandbox Source Location: $GEOSDIR/src
@@ -2177,10 +2249,11 @@ set   OLDUSER=`/bin/ls -l $CLONEDIR/ctm_run.j | awk '{print $3}'`
 
 setenv ARCH      `uname`
 setenv GEOSDIR  /`grep "setenv GEOSDIR" $CLONEDIR/ctm_run.j | cut -d'/' -f2-`
-setenv GEOSSRC  ${GEOSDIR}/src
-setenv GEOSBIN  ${GEOSDIR}/$ARCH/bin
-setenv GEOSUTIL ${GEOSSRC}/GMAO_Shared/GEOS_Util
-setenv CTMVER   `cat ${GEOSSRC}/Applications/GEOSctm_App/.GEOSCTM_VERSION`
+setenv GEOSSRC  ${GEOSDIR}
+setenv GEOSBIN  ${GEOSDIR}/bin
+setenv GEOSETC  ${GEOSDIR}/etc
+setenv GEOSUTIL ${GEOSDIR}
+setenv CTMVER   `cat ${GEOSETC}/.GEOSCTM_VERSION`
 
 # -------------------------------------------------
 # Figure out how this person usually runs the model
@@ -2437,6 +2510,12 @@ echo ""
 # --------------------------------
 
 if ( $NOCVS != "TRUE" ) then
+
+echo "ERROR! Repository managment is not supported yet in this model"
+echo "       due to the move to git. If this section is reached,"
+echo "       something has gone wrong. Please contact Matt Thompson"
+echo "       or Larry Takacs"
+exit 3
 
 # Make a src directory under NEWEXPDIR to hold current Experiment files
 # Note:  Sandbox Source Location: $GEOSDIR/src

@@ -11,9 +11,10 @@ COLLECTIONS:
 >>>HIST_GMICHEM<<<          'gmi_edge'
 >>>HIST_GMICHEM<<<          'gmi_inst'
 >>>HIST_GMICHEM<<<          'gmi_avrg'
+>>>HIST_GMICHEM<<<          'gmi_inc'
 >>>HIST_IdealizedPT<<<      'idealPT'
 >>>HIST_GEOSCHEMCHEM<<<     'tavg1_2d_chm_Nx'
->>>HIST_GEOSCHEMCHEM<<<     'inst_geoschem'
+>>>HIST_GEOSCHEMCHEM<<<#    'inst_geoschem'
              ::
 
 #                        ------------------------
@@ -418,6 +419,20 @@ COLLECTIONS:
                           'AIRDENS'       , 'CHEMENV' ,
                     ::
 
+>>>HIST_GMICHEM<<<  gmi_inc.template:   '%y4%m2%d2_%h2%n2z.nc4',
+>>>HIST_GMICHEM<<<  gmi_inc.archive:    '%c/Y%y4',
+>>>HIST_GMICHEM<<<  gmi_inc.format:     'CFIO',
+>>>HIST_GMICHEM<<<  gmi_inc.mode:       'time-averaged',
+>>>HIST_GMICHEM<<<  gmi_inc.conservative: 1,
+>>>HIST_GMICHEM<<<  gmi_inc.frequency:  240000,
+>>>HIST_GMICHEM<<<  gmi_inc.duration:   240000,
+>>>HIST_GMICHEM<<<  gmi_inc.ref_time:   000000,
+>>>HIST_GMICHEM<<<  gmi_inc.resolution: @HIST_IM @HIST_JM,
+>>>HIST_GMICHEM<<<  gmi_inc.fields:     'CHEMTRI%GMICHEM::N2O5IC'          , 'CHEMISTRY' ,     'N2O5_CHEMTEND' ,
+>>>HIST_GMICHEM<<<                      'CHEMTRI%GMICHEM::ClONO2IC'        , 'CHEMISTRY' ,   'CLONO2_CHEMTEND' ,
+>>>HIST_GMICHEM<<<                      'CHEMTRI%GMICHEM::HClIC'           , 'CHEMISTRY' ,      'HCL_CHEMTEND' ,
+>>>HIST_GMICHEM<<<                    ::
+
   tavg1_2d_chm_Nx.template:   '%y4%m2%d2_%h2%n2z.nc4',
   tavg1_2d_chm_Nx.archive:    '%c/Y%y4',
   tavg1_2d_chm_Nx.descr:      '2d,1-Hourly,Time-Averaged,Surface-Layer,Chemistry Fields',
@@ -430,12 +445,12 @@ COLLECTIONS:
   tavg1_2d_chm_Nx.resolution: 144 91,
   tavg1_2d_chm_Nx.levels:     72,
   tavg1_2d_chm_Nx.fields:     'TRC_NO'      , 'GEOSCHEMCHEM' , 'NO'    ,
-                              'NO2dry'      , 'GEOSCHEMCHEM' , 'NO2'   ,
-                              'O3dry'       , 'GEOSCHEMCHEM' , 'O3'    ,
+#                             'NO2dry'      , 'GEOSCHEMCHEM' , 'NO2'   ,
+#                             'O3dry'       , 'GEOSCHEMCHEM' , 'O3'    ,
                               'TRC_SO2'     , 'GEOSCHEMCHEM' , 'SO2GC' ,
                               'TRC_CO'      , 'GEOSCHEMCHEM' , 'COGC'  ,
 #                             'NOdry'       , 'GEOSCHEMCHEM' ,
-                              'COdry'       , 'GEOSCHEMCHEM' ,
+#                             'COdry'       , 'GEOSCHEMCHEM' ,
 #                             'SO2dry'      , 'GEOSCHEMCHEM' ,
                               'GOCART::SO2' , 'GOCART'       , 'SO2'   ,
                               'COSC'        , 'GOCART'       , 'CO'    ,

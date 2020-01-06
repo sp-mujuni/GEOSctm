@@ -83,9 +83,9 @@ if (! -e $SCRDIR ) mkdir -p $SCRDIR
 
 set         NX = `grep    "^ *NX:" $HOMDIR/GEOSCTM.rc | cut -d':' -f2`
 set         NY = `grep    "^ *NY:" $HOMDIR/GEOSCTM.rc | cut -d':' -f2`
-set GEOSCTM_IM = `grep GEOSCTM_IM: $HOMDIR/GEOSCTM.rc | cut -d':' -f2`
-set GEOSCTM_JM = `grep GEOSCTM_JM: $HOMDIR/GEOSCTM.rc | cut -d':' -f2`
-set GEOSCTM_LM = `grep         LM: $HOMDIR/GEOSCTM.rc | cut -d':' -f2`
+set GEOSCTM_IM = `grep GEOSctm_IM: $HOMDIR/GEOSCTM.rc | cut -d':' -f2`
+set GEOSCTM_JM = `grep GEOSctm_JM: $HOMDIR/GEOSCTM.rc | cut -d':' -f2`
+set GEOSCTM_LM = `grep GEOSctm_LM: $HOMDIR/GEOSCTM.rc | cut -d':' -f2`
 set    OGCM_IM = `grep    OGCM_IM: $HOMDIR/GEOSCTM.rc | cut -d':' -f2`
 set    OGCM_JM = `grep    OGCM_JM: $HOMDIR/GEOSCTM.rc | cut -d':' -f2`
 
@@ -207,6 +207,7 @@ else
 endif
                              @CPEXEC -f  $HOMDIR/*.rc .
                              @CPEXEC -f  $HOMDIR/*.nml .
+                             @CPEXEC     $GEOSBIN/bundleParser.py .
 
                              cat fvcore_layout.rc >> input.nml
 
@@ -300,6 +301,9 @@ cat << _EOF_ > $FILE
 /bin/ln -sf $BCSDIR/Shared/pchem.species.CMIP-5.1870-2097.z_91x72.nc4 species.data
 /bin/ln -sf $BCSDIR/Shared/*bin .
 /bin/ln -sf $BCSDIR/Shared/*c2l*.nc4 .
+
+#link to Ben's special tile files:
+/bin/ln -sf /discover/nobackup/bmauer/tile_files/*/* .
 
 _EOF_
 
@@ -765,6 +769,37 @@ EOF
     rm -f $tFILE
     rm -f $sFILE
 
+# Rename ExtData files that are not needed
+# ----------------------------------------
+set            SC_TRUE = `grep -i "^ *ENABLE_STRATCHEM *: *\.TRUE\."     GEOS_ChemGridComp.rc | wc -l`
+if (          $SC_TRUE == 0 && -e StratChem_ExtData.rc          ) /bin/mv          StratChem_ExtData.rc          StratChem_ExtData.rc.NOT_USED
+set           GMI_TRUE = `grep -i "^ *ENABLE_GMICHEM *: *\.TRUE\."       GEOS_ChemGridComp.rc | wc -l`
+if (         $GMI_TRUE == 0 && -e GMI_ExtData.rc                ) /bin/mv                GMI_ExtData.rc                GMI_ExtData.rc.NOT_USED
+set           GCC_TRUE = `grep -i "^ *ENABLE_GEOSCHEM *: *\.TRUE\."      GEOS_ChemGridComp.rc | wc -l`
+if (         $GCC_TRUE == 0 && -e GEOSCHEMchem_ExtData.rc       ) /bin/mv       GEOSCHEMchem_ExtData.rc       GEOSCHEMchem_ExtData.rc.NOT_USED
+set         CARMA_TRUE = `grep -i "^ *ENABLE_CARMA *: *\.TRUE\."         GEOS_ChemGridComp.rc | wc -l`
+if (       $CARMA_TRUE == 0 && -e CARMAchem_GridComp_ExtData.rc ) /bin/mv CARMAchem_GridComp_ExtData.rc CARMAchem_GridComp_ExtData.rc.NOT_USED
+set           DNA_TRUE = `grep -i "^ *ENABLE_DNA *: *\.TRUE\."           GEOS_ChemGridComp.rc | wc -l`
+if (         $DNA_TRUE == 0 && -e DNA_ExtData.rc                ) /bin/mv                DNA_ExtData.rc                DNA_ExtData.rc.NOT_USED
+set         ACHEM_TRUE = `grep -i "^ *ENABLE_ACHEM *: *\.TRUE\."         GEOS_ChemGridComp.rc | wc -l`
+if (       $ACHEM_TRUE == 0 && -e GEOSachem_ExtData.rc          ) /bin/mv          GEOSachem_ExtData.rc          GEOSachem_ExtData.rc.NOT_USED
+set   GOCART_DATA_TRUE = `grep -i "^ *ENABLE_GOCART_DATA *: *\.TRUE\."   GEOS_ChemGridComp.rc | wc -l`
+if ( $GOCART_DATA_TRUE == 0 && -e GOCARTdata_ExtData.rc         ) /bin/mv         GOCARTdata_ExtData.rc         GOCARTdata_ExtData.rc.NOT_USED
+
+# Alternate syntax:
+#set EXT_FILE=StratChem_ExtData.rc
+#if(`grep -i "^ *ENABLE_STRATCHEM *: *\.TRUE\."     GEOS_ChemGridComp.rc | wc -l`==0 && -e $EXT_FILE) /bin/mv $EXT_FILE $EXT_FILE.NOT_USED
+
+if( ${doGEOSCHEMCHEM} == YES) then
+
+# Rename ExtData file that conflicts w/ GEOS-Chem
+# -----------------------------------------------
+/bin/mv  HEMCOgocart_ExtData.rc  HEMCOgocart_ExtData.rc.NOT_USED
+EOF
+
+endif
+
+
 # Concatenate required ExtData files
 # ----------------------------------
 set EXTDATA_FILES = `/bin/ls -1 MAPL_ExtData_${sYear}.rc *_ExtData.rc`
@@ -848,6 +883,9 @@ endif
 sed -i 's/QFED\/NRT/QFED/'             ${COMPNAME}_ExtData_${sYear}.rc
 sed -i 's/v2.5r1_0.1_deg/v2.5r1\/0.1/' ${COMPNAME}_ExtData_${sYear}.rc
 
+# Run bundleParser.py
+#---------------------
+python bundleParser.py
 
 # Link Boundary Conditions for Appropriate Date
 # ---------------------------------------------
@@ -864,6 +902,11 @@ if( $USE_SHMEM == 1 ) $GEOSBIN/RmShmKeys_sshmpi.csh
 set rc =  $status
 
 echo GEOSctm Run Status: $rc
+
+if ( $rc != 0 ) then
+   echo 'CTM error: exit'
+   exit
+endif
  
 #######################################################################
 #   Rename Final Checkpoints => Restarts for Next Segment and Archive
