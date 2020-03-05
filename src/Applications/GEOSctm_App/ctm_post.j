@@ -29,7 +29,7 @@ setenv ARCH `uname`
 
 setenv SITE             @SITE
 setenv GEOSBIN          @GEOSBIN
-setenv GEOSUTIL         @GEOSSRC/GMAO_Shared/GEOS_Util
+setenv GEOSUTIL         @GEOSSRC
 setenv BATCHNAME       "@POST_N"
 
 if( $?PBS_NODEFILE ) then
@@ -46,6 +46,19 @@ setenv LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:${BASEDIR}/${ARCH}/lib
 #                      Perform Post Processing
 #######################################################################
 
-$GEOSUTIL/post/ctmpost.script -source @EXPDIR -ncpus $NCPUS -collections @COLLECTION -rec_plt @YYYYMM
+setenv POST_SCRIPT @EXPDIR/post/ctmpost.script.$SLURM_JOB_ID
+
+/bin/cp  $GEOSUTIL/post/gcmpost.script $POST_SCRIPT
+
+# A few simple edits change the GCM script to a CTM script:
+sed -i -e "s/gcm_run.j/ctm_run.j/g"       $POST_SCRIPT
+sed -i -e "s/GEOS5.0/GEOSctm/g"           $POST_SCRIPT
+sed -i -e "s/AGCM.rc/GEOSCTM.rc/g"        $POST_SCRIPT
+sed -i -e "s/AGCM_IM/GEOSctm_IM/g"        $POST_SCRIPT
+sed -i -e "s/AGCM_JM/GEOSctm_JM/g"        $POST_SCRIPT
+sed -i -e "s/GEOSgcm.x/GEOSctm.x/g"       $POST_SCRIPT
+sed -i -e "s/gcm_archive/ctm_archive/g"   $POST_SCRIPT
+
+$POST_SCRIPT -source @EXPDIR -ncpus $NCPUS -collections @COLLECTION -rec_plt @YYYYMM
 
 exit

@@ -16,6 +16,7 @@
       use FV_StateMod, only : calcCourantNumberMassFlux => fv_computeMassFluxes
       use fv_arrays_mod , only: FVPRC
       use m_set_eta,  only : set_eta
+      use GEOS_FV3_UtilitiesMod, only: a2d2c
 
       implicit none
       private
@@ -920,6 +921,8 @@
       ALLOCATE( VCr8(is:ie,js:je,lm),   STAT=STATUS); VERIFY_(STATUS)
       ALLOCATE(PLEr8(is:ie,js:je,lm+1), STAT=STATUS); VERIFY_(STATUS)
 
+      call A2D2C(uc1,vc1,lm,.true.)
+      call A2D2c(uc0,vc0,lm,.true.)
       UCr8  = 0.50d0*(UC1  + UC0)
       VCr8  = 0.50d0*(VC1  + VC0)
       PLEr8 = 0.50d0*(PLE1 + PLE0)
