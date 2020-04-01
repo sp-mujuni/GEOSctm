@@ -13,7 +13,7 @@ cmake:
 ecbuild:
    local: ./@cmake/@ecbuild
    remote: ../ecbuild.git
-   tag: geos/v1.0.0
+   branch: feature/FindMKL-portability-improvement
 
 GMAO_Shared:
    local: ./src/Shared/@GMAO_Shared
