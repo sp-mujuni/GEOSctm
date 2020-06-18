@@ -168,16 +168,16 @@
      &                default = 0, rc=STATUS )
       VERIFY_(STATUS)
 
-      call rcEsmfReadLogical(convConfigFile, self%det_ent, &
-     &               "det_ent:", default=.false., rc=STATUS )
+      call ESMF_ConfigGetAttribute(convConfigFile, value=self%det_ent, &
+                     label="det_ent:", default=.false., rc=STATUS)
       VERIFY_(STATUS)
 
-      call rcEsmfReadLogical(convConfigFile, self%do_downdraft, &
-     &               "do_downdraft:", default=.false., rc=STATUS )
+      call ESMF_ConfigGetAttribute(convConfigFile, value=self%do_downdraft, &
+                     label="do_downdraft:", default=.false., rc=STATUS)
       VERIFY_(STATUS)
 
-      call rcEsmfReadLogical(convConfigFile, self%do_old_ncar, &
-     &               "do_old_ncar:", default=.false., rc=STATUS )
+      call ESMF_ConfigGetAttribute(convConfigFile, value=self%do_old_ncar, &
+                     label="do_old_ncar:", default=.false., rc=STATUS)
       VERIFY_(STATUS)
 
       call ESMF_ConfigGetAttribute(convConfigFile, self%met_opt, &
@@ -190,12 +190,12 @@
      &                default = 0, rc=STATUS )
       VERIFY_(STATUS)
 
-      call rcEsmfReadLogical(convConfigFile, self%do_wetdep, &
-     &               "do_wetdep:", default=.false., rc=STATUS )
+      call ESMF_ConfigGetAttribute(convConfigFile, value=self%do_wetdep, &
+                     label="do_wetdep:", default=.false., rc=STATUS)
       VERIFY_(STATUS)
 
-      call rcEsmfReadLogical(convConfigFile, self%do_drydep, &
-     &               "do_drydep:", default=.false., rc=STATUS )
+      call ESMF_ConfigGetAttribute(convConfigFile, value=self%do_drydep, &
+                     label="do_drydep:", default=.false., rc=STATUS)
       VERIFY_(STATUS)
 
       IF ( MAPL_AM_I_ROOT() ) THEN
