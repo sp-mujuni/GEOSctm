@@ -4,14 +4,13 @@
 #                     Batch Parameters for Run Job
 #######################################################################
 
-#SBATCH --time=@RUN_T
-#SBATCH --job-name=@RUN_N
+#@BATCH_TIME@RUN_T
 #@RUN_P
+#@BATCH_JOBNAME@RUN_N
 #@RUN_Q
 #@BATCH_GROUP
-#SBATCH --mail-type=BEGIN
-#SBATCH --mail-type=END
-#@PBS -o ctm_run.o@RSTDATE
+#@BATCH_JOINOUTERR
+#@BATCH_NAME -o ctm_run.o@RSTDATE
 
 #######################################################################
 #                         System Settings 
@@ -21,7 +20,6 @@ umask 022
 
 limit stacksize unlimited
 
-@SETENVS
 
 #######################################################################
 # Configuration Settings
@@ -39,12 +37,14 @@ setenv ARCH `uname`
 setenv SITE             @SITE
 setenv GEOSDIR          @GEOSDIR 
 setenv GEOSBIN          @GEOSBIN 
-setenv GEOSUTIL         @GEOSSRC/GMAO_Shared/GEOS_Util
-setenv RUN_CMD         "@RUN_CMD"
+setenv GEOSETC          @GEOSETC 
+setenv GEOSUTIL         @GEOSSRC
 setenv CTMVER           @CTMVER
 
 source $GEOSBIN/g5_modules
-setenv LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:${BASEDIR}/${ARCH}/lib
+setenv LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:${BASEDIR}/${ARCH}/lib:${GEOSDIR}/lib
+
+setenv RUN_CMD         "$GEOSBIN/esma_mpirun -np "
 
 #######################################################################
 #             Experiment Specific Environment Variables
@@ -89,21 +89,76 @@ set GEOSCTM_LM = `grep GEOSctm_LM: $HOMDIR/GEOSCTM.rc | cut -d':' -f2`
 set    OGCM_IM = `grep    OGCM_IM: $HOMDIR/GEOSCTM.rc | cut -d':' -f2`
 set    OGCM_JM = `grep    OGCM_JM: $HOMDIR/GEOSCTM.rc | cut -d':' -f2`
 
+# Calculate number of cores/nodes for IOSERVER
+# --------------------------------------------
+
+set USE_IOSERVER   = @USE_IOSERVER
+set AGCM_IOS_NODES = `grep IOSERVER_NODES: $HOMDIR/AGCM.rc | cut -d':' -f2`
+
+if ($USE_IOSERVER == 0) then
+   set IOS_NODES = 0
+else
+   set IOS_NODES = $AGCM_IOS_NODES
+endif
+
 # Check for Over-Specification of CPU Resources
 # ---------------------------------------------
-  if ($?PBS_NODEFILE) then
+if ($?SLURM_NTASKS) then
+   set  NCPUS = $SLURM_NTASKS
+else if ($?PBS_NODEFILE) then
      set  NCPUS = `cat $PBS_NODEFILE | wc -l`
-     @    NPES  = $NX * $NY
+else
+   set  NCPUS = NULL
+endif
+
+@ MODEL_NPES = $NX * $NY
+
+if ( $NCPUS != NULL ) then
+
+   if ( $USE_IOSERVER == 1 ) then
+
+      set NCPUS_PER_NODE = @NCPUS_PER_NODE
+
+      @ NODES  = `echo "( ($MODEL_NPES + $NCPUS_PER_NODE) + ($AGCM_IOS_NODES * $NCPUS_PER_NODE) - 1)/$NCPUS_PER_NODE" | bc`
+      @ NPES   = $NODES * $NCPUS_PER_NODE
+
         if( $NPES > $NCPUS ) then
              echo "CPU Resources are Over-Specified"
              echo "--------------------------------"
              echo "Allotted NCPUs: $NCPUS"
-             echo "Specified  NX : $NX"
-             echo "Specified  NY : $NY"
+             echo "Requested NCPUs: $NPES"
+             echo ""
+             echo "Specified NX: $NX"
+             echo "Specified NY: $NY"
+             echo ""
+             echo "Specified IOSERVER_NODES: $AGCM_IOS_NODES"
+             echo "Specified cores per node: $NCPUS_PER_NODE"
              exit
         endif
+
+   else
+
+      @ NPES = $MODEL_NPES
+
+      if( $NPES > $NCPUS ) then
+         echo "CPU Resources are Over-Specified"
+         echo "--------------------------------"
+         echo "Allotted  NCPUs: $NCPUS"
+         echo "Requested NCPUs: $NPES"
+         echo ""
+         echo "Specified NX: $NX"
+         echo "Specified NY: $NY"
+         exit
      endif
+
   endif
+
+else
+   # This is for the desktop path
+
+   @ NPES = $MODEL_NPES
+
+endif
 
 #######################################################################
 #                       GCMEMIP Setup
@@ -133,19 +188,24 @@ chmod +x $FILE
 set year  = `echo $RSTDATE | cut -d_ -f1 | cut -b1-4`
 set month = `echo $RSTDATE | cut -d_ -f1 | cut -b5-6`
 
-# Copy MERRA-2 Restarts
-# ---------------------
-@CPEXEC /discover/nobackup/projects/gmao/g6dev/ltakacs/MERRA2/restarts/AMIP/M${month}/restarts.${year}${month}.tar .
+>>>EMIP_OLDLAND<<<# Copy MERRA-2 Restarts
+>>>EMIP_OLDLAND<<<# ---------------------
+>>>EMIP_NEWLAND<<<# Copy Jason-3_4 REPLAY MERRA-2 NewLand Restarts
+>>>EMIP_NEWLAND<<<# ----------------------------------------------
+@CPEXEC /discover/nobackup/projects/gmao/g6dev/ltakacs/@EMIP_MERRA2/restarts/AMIP/M${month}/restarts.${year}${month}.tar .
 @TAREXEC xf  restarts.${year}${month}.tar
 /bin/rm restarts.${year}${month}.tar
-/bin/rm MERRA2*bin
+>>>EMIP_OLDLAND<<</bin/rm MERRA2*bin
 
 
-# Regrid MERRA-2 Restarts
-# -----------------------
-set RSTID = `/bin/ls *catch*bin | cut -d. -f1`
-$GEOSBIN/regrid.pl -np -ymd ${year}${month}10 -hr 21 -grout C${AGCM_IM} -levsout ${AGCM_LM} -outdir . -d . -expid $RSTID -tagin Ganymed-4_0 -oceanin e -i -nobkg -lbl -nolcv -tagout Icarus -rs 3 -oceanout @OCEANOUT
-/bin/rm $RSTID.*.bin
+>>>EMIP_OLDLAND<<<# Regrid MERRA-2 Restarts
+>>>EMIP_OLDLAND<<<# -----------------------
+>>>EMIP_NEWLAND<<<# Regrid Jason-3_4 REPLAY MERRA-2 NewLand Restarts
+>>>EMIP_NEWLAND<<<# ------------------------------------------------
+set RSTID = `/bin/ls *catch* | cut -d. -f1`
+set day   = `/bin/ls *catch* | cut -d. -f3 | cut -b 7-8`
+$GEOSBIN/regrid.pl -np -ymd ${year}${month}${day} -hr 21 -grout C${AGCM_IM} -levsout ${AGCM_LM} -outdir . -d . -expid $RSTID -tagin @EMIP_BCS_IN -oceanin e -i -nobkg -lbl -nolcv -tagout @LSMBCS -rs 3 -oceanout @OCEANOUT
+>>>EMIP_OLDLAND<<</bin/rm $RSTID.*.bin
 
      set IMC = $AGCM_IM
 if(     $IMC < 10 ) then
@@ -156,15 +216,19 @@ else if($IMC < 1000) then
      set IMC = 0$IMC
 endif
 
+set  chk_type = `/usr/bin/file -Lb --mime-type C${AGCM_IM}e_${RSTID}.*catch*`
+if( "$chk_type" =~ "application/octet-stream" ) set ext = bin
+if( "$chk_type" =~ "application/x-hdf"        ) set ext = nc4
+
 $GEOSBIN/stripname C${AGCM_IM}@OCEANOUT_${RSTID}.
-$GEOSBIN/stripname .${year}${month}10_21z.bin.@BCSTAG.@ATMOStag_@OCEANtag
-/bin/mv gocart_internal_rst gocart_internal_rst.merra2
-$GEOSBIN/gogo.x -s $RSTID.Chem_Registry.rc.${year}${month}10_21z -t $EXPDIR/RC/Chem_Registry.rc -i gocart_internal_rst.merra2 -o gocart_internal_rst -r C${AGCM_IM} -l ${AGCM_LM}
+$GEOSBIN/stripname .${year}${month}${day}_21z.$ext.@LSMBCS_@BCSTAG.@ATMOStag_@OCEANtag
+>>>EMIP_OLDLAND<<</bin/mv gocart_internal_rst gocart_internal_rst.merra2
+>>>EMIP_OLDLAND<<<$GEOSBIN/gogo.x -s $RSTID.Chem_Registry.rc.${year}${month}${day}_21z -t $EXPDIR/RC/Chem_Registry.rc -i gocart_internal_rst.merra2 -o gocart_internal_rst -r C${AGCM_IM} -l ${AGCM_LM}
 
 
 # Create CAP.rc and cap_restart
 # -----------------------------
-set   nymd = ${year}${month}10
+set   nymd = ${year}${month}${day}
 set   nhms = 210000
 echo $nymd $nhms > cap_restart
 
@@ -207,6 +271,7 @@ else
 endif
                              @CPEXEC -f  $HOMDIR/*.rc .
                              @CPEXEC -f  $HOMDIR/*.nml .
+                             @CPEXEC -f  $HOMDIR/*.yaml .
                              @CPEXEC     $GEOSBIN/bundleParser.py .
 
                              cat fvcore_layout.rc >> input.nml
@@ -461,6 +526,19 @@ endif
 set yearc = `echo $nymdc | cut -c1-4`
 set yearf = `echo $nymdf | cut -c1-4`
 
+# For Non-Reynolds SST, Modify local CAP.rc Ending date if Finish time exceeds Current year boundary
+# --------------------------------------------------------------------------------------------------
+if( @OCEANtag != DE0360xPE0180 ) then
+    if( $yearf > $yearc ) then
+       @ yearf = $yearc + 1
+       @ nymdf = $yearf * 10000 + 0101
+        set oldstring = `cat CAP.rc | grep END_DATE:`
+        set newstring = "END_DATE: $nymdf $nhmsf"
+        /bin/mv CAP.rc CAP.tmp
+        cat CAP.tmp | sed -e "s?$oldstring?$newstring?g" > CAP.rc
+    endif
+endif
+
 # Select proper MERRA-2 GOCART Emission RC Files
 # (NOTE: MERRA2-DD has same transition date)
 # ----------------------------------------------
@@ -469,7 +547,7 @@ if( ${EMISSIONS} == MERRA2 | \
     set MERRA2_Transition_Date = 20000401
 
     if( $nymdc < ${MERRA2_Transition_Date} ) then
-         set MERRA2_EMISSIONS_DIRECTORY = $GEOSDIR/$ARCH/etc/$EMISSIONS/19600101-20000331
+         set MERRA2_EMISSIONS_DIRECTORY = $GEOSDIR/etc/$EMISSIONS/19600101-20000331
          if( $nymdf > ${MERRA2_Transition_Date} ) then
           set nymdf = ${MERRA2_Transition_Date}
           set oldstring = `cat CAP.rc | grep END_DATE:`
@@ -478,7 +556,7 @@ if( ${EMISSIONS} == MERRA2 | \
                      cat CAP.tmp | sed -e "s?$oldstring?$newstring?g" > CAP.rc
          endif
     else
-         set MERRA2_EMISSIONS_DIRECTORY = $GEOSDIR/$ARCH/etc/$EMISSIONS/20000401-present
+         set MERRA2_EMISSIONS_DIRECTORY = $GEOSDIR/etc/$EMISSIONS/20000401-present
     endif
 
     if( $GEOSCTM_LM == 72 ) then
@@ -883,6 +961,13 @@ endif
 sed -i 's/QFED\/NRT/QFED/'             ${COMPNAME}_ExtData_${sYear}.rc
 sed -i 's/v2.5r1_0.1_deg/v2.5r1\/0.1/' ${COMPNAME}_ExtData_${sYear}.rc
 
+# Environment variables for MPI, etc
+# ----------------------------------
+
+@SETENVS
+
+@GPUSTART
+
 # Run bundleParser.py
 #---------------------
 python bundleParser.py
@@ -895,8 +980,15 @@ setenv YEAR $yearc
 # Run GEOSctm.x
 # -------------
 if( $USE_SHMEM == 1 ) $GEOSBIN/RmShmKeys_sshmpi.csh
-       @  NPES = $NX * $NY
-$RUN_CMD $NPES ./GEOSctm.x
+
+if( $USE_IOSERVER == 1) then
+   set IOSERVER_OPTIONS = "--npes_model $MODEL_NPES --nodes_output_server $IOS_NODES"
+else
+   set IOSERVER_OPTIONS = ""
+endif
+
+$RUN_CMD $NPES ./GEOSctm.x $IOSERVER_OPTIONS --logging_config 'logging.yaml'
+
 if( $USE_SHMEM == 1 ) $GEOSBIN/RmShmKeys_sshmpi.csh
 
 set rc =  $status
@@ -1042,8 +1134,8 @@ endif
 if ( $rc == 0 ) then
       cd  $HOMDIR
       if( $GCMEMIP == TRUE ) then
-          if( $capdate < $enddate ) qsub $HOMDIR/ctm_run.j$RSTDATE
+          if( $capdate < $enddate ) @BATCH_CMD $HOMDIR/ctm_run.j$RSTDATE
       else
-          if( $capdate < $enddate ) qsub $HOMDIR/ctm_run.j
+          if( $capdate < $enddate ) @BATCH_CMD $HOMDIR/ctm_run.j
       endif
 endif

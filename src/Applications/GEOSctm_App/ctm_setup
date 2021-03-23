@@ -59,9 +59,9 @@ set BINDIR   = `dirname $CTMSETUP`
 set GEOSDEF  = `dirname $BINDIR`
 set ETCDIR   = ${GEOSDEF}/etc
 
-# Test if GEOSgcm.x is here which means you are in install directory
+# Test if GEOSctm.x is here which means you are in install directory
 if (! -x GEOSctm.x) then
-   echo "You are trying to run $0 in the Applications/GEOSgcm_App directory"
+   echo "You are trying to run $0 in the Applications/GEOSctm_App directory"
    echo "This is no longer supported. Please run from the bin/ directory"
    echo "in your installation"
    exit 1
@@ -74,6 +74,7 @@ endif
 # Set default behavior of switches
 set NOCVS = TRUE
 set GPU   = FALSE
+set LINKX = FALSE
 
 while ( $#argv > 0 )
    set arg = $argv[1]
@@ -97,6 +98,11 @@ while ( $#argv > 0 )
          set NOCVS = TRUE
          breaksw
 
+      # Symlink GEOSctm.x
+      case --link:
+         set LINKX = TRUE
+         breaksw
+
       # Here any string not above will trigger USAGE
       case -[Hh]:
       case --[Hh][Ee][Ll][Pp]:
@@ -110,6 +116,7 @@ end
 #######################################################################
 
 setenv NODE `uname -n`
+setenv ARCH `uname -s`
 setenv SITE `awk '{print $2}' $ETCDIR/SITE.rc`
 
 if ( $SITE != 'NCCS' && $SITE != 'NAS' ) then
@@ -136,7 +143,9 @@ if ( $SITE == 'NCCS' ) then
    endif
    
 else if ( $SITE == 'NAS' ) then
-   if ( ($NODE =~ r[0-9]*i[0-9]*n[0-9]*) || ($NODE =~ maia*) ) then
+   if ( ($NODE =~ r[0-9]*i[0-9]*n[0-9]*) || \
+        ($NODE =~ r[0-9]*c[0-9]*t[0-9]*n[0-9]*) || \
+        ($NODE =~ maia*) ) then
       goto ONCOMPUTE
    endif
 endif
@@ -149,18 +158,11 @@ endif
 
 setenv BASEDIR `awk '{print $2}' $ETCDIR/BASEDIR.rc`
 
-if ( `echo $BASEDIR | grep -i ifort` != '') then
-   set COMPILER = ifort
-else if ( `echo $BASEDIR | grep -i pgfortran` != '') then
-   set COMPILER = pgfortran
-else
-   # Assume default is ifort in case of older baselibs
-   set COMPILER = ifort 
-endif
-
      if ( `echo $BASEDIR | grep -i mvapich2` != '') then
    set MPI = mvapich2
 else if ( `echo $BASEDIR | grep -i openmpi`  != '') then
+   set MPI = openmpi
+else if ( `echo $BASEDIR | grep -i hpcx`     != '') then
    set MPI = openmpi
 else if ( `echo $BASEDIR | grep -i impi`     != '') then
    set MPI = intelmpi
@@ -171,24 +173,6 @@ else if ( `echo $BASEDIR | grep -i mpt`      != '') then
 else
    # Assume default is Intel MPI in case of older baselibs
    set MPI = intelmpi 
-endif
-
-#######################################################################
-#                   Set up RUN_CMD for MPI Stack
-#######################################################################
-
-if ( $MPI == mvapich2 ) then
-   if ( $SITE == 'NAS') then
-      setenv RUN_CMD 'mpirun_rsh -export -hostfile $PBS_NODEFILE -np ' # mpi run for MVAPICH2
-   else if ($SITE == 'NCCS') then
-      setenv RUN_CMD 'srun --mpi=pmi2 -n '   # mpi run for MVAPICH2
-   endif
-else if ( $MPI == openmpi ) then
-   setenv RUN_CMD 'mpirun -map-by core -bind-to core -np ' # mpi run for OpenMPI 
-else if ( $MPI == intelmpi ) then
-   setenv RUN_CMD 'mpirun -np '              # mpi run for Intel MPI
-else if ( $MPI == mpt ) then
-   setenv RUN_CMD 'mpiexec_mpt -np '         # mpi run for MPT
 endif
 
 #######################################################################
@@ -249,57 +233,226 @@ endif
 
 HRCODE:
 echo "Enter the ${C1}Atmospheric Horizontal Resolution${CN} code:"
-echo "-----------------------------------------------------------"
-echo "            Cubed-Sphere                   "
-echo "-----------------------------------------------------------"
-echo "          ${C2}c48   --   2  deg ${CN}"
-echo "          ${C2}c90   --   1  deg ${CN}"
-echo "          ${C2}c180  -- 1/2  deg (${C1}56-km${C2}) ${CN}"
-echo "          ${C2}c360  -- 1/4  deg (${C1}28-km${C2}) ${CN} "
-echo "          ${C2}c720  -- 1/8  deg (${C1}14-km${C2}) ${CN}"
-echo "          ${C2}c1440 -- 1/16 deg (${C1} 7-km${C2}) ${CN}"
+echo "--------------------------------------"
+echo "            Cubed-Sphere"
+echo "--------------------------------------"
+echo "   ${C2}c12  --  8   deg ${CN}"
+echo "   ${C2}c24  --  4   deg ${CN}"
+echo "   ${C2}c48   --   2  deg ${CN}"
+echo "   ${C2}c90   --   1  deg ${CN}"
+echo "   ${C2}c180  -- 1/2  deg (${C1}56-km${C2}) ${CN}"
+echo "   ${C2}c360  -- 1/4  deg (${C1}28-km${C2}) ${CN} "
+echo "   ${C2}c720  -- 1/8  deg (${C1}14-km${C2}) ${CN}"
+echo "   ${C2}c1440 - 1/16 deg (${C1} 7-km${C2}) ${CN}"
+echo "   ${C2}          DYAMOND Grids                 "
+echo "   ${C2}c768 -- 1/8  deg (${C1}12-km${C2}) ${CN}"
+echo "   ${C2}c1536 - 1/16 deg (${C1} 6-km${C2}) ${CN}"
+echo "   ${C2}c3072 - 1/32 deg (${C1} 3-km${C2}) ${CN}"
 echo " "
 set HRCODE = `echo $<`
 set HRCODE = `echo $HRCODE | tr "[:upper:]" "[:lower:]"`
 
-if( $HRCODE != 'c24'   & \
+if( $HRCODE != 'c12'   & \
+    $HRCODE != 'c24'   & \
     $HRCODE != 'c48'   & \
     $HRCODE != 'c90'   & \
     $HRCODE != 'c180'  & \
     $HRCODE != 'c360'  & \
     $HRCODE != 'c720'  & \
-    $HRCODE != 'c1440' ) goto HRCODE
+    $HRCODE != 'c1440' & \
+    $HRCODE != 'c768'  & \
+    $HRCODE != 'c1536' & \
+    $HRCODE != 'c3072' ) goto HRCODE
 
-if( $HRCODE == 'c24'   | \
-    $HRCODE == 'c48'   | \
-    $HRCODE == 'c90'   | \
-    $HRCODE == 'c180'  | \
-    $HRCODE == 'c360'  | \
-    $HRCODE == 'c720'  | \
-    $HRCODE == 'c1440' ) then
-     set Resolution = $HRCODE
-endif
+set Resolution = $HRCODE
 
-if( $#Resolution == 2 ) then
-   set GEOSCTM_IM = $Resolution[1]
-   set GEOSCTM_JM = $Resolution[2]
-   set CUBED   = FALSE
-   set DYCORE  = FV
+set CUBED = TRUE
+set DYCORE  = FV3
+set GEOSCTM_NF = 6
+set GRID_TYPE = "Cubed-Sphere"
+if (`echo $Resolution[1] | cut -b1` == "c" ) then
+   set  GEOSCTM_IM = $Resolution[1]
 else
-   set CUBED   = TRUE
-   set DYCORE  = FV3
-   if (`echo $Resolution[1] | cut -b1` == "c" ) then
-        set  GEOSCTM_IM = $Resolution[1]
-   else
-        set  GEOSCTM_IM = "c$Resolution[1]"
-   endif
+   set  GEOSCTM_IM = "c$Resolution[1]"
 endif
-
 
 echo "Enter the Atmospheric Model ${C1}Vertical Resolution${CN}: ${C2}LM${CN} (Default: 72)"
 set   GEOSCTM_LM = $<
 if( .$GEOSCTM_LM == . ) then
   set GEOSCTM_LM = 72
+endif
+
+#######################################################################
+#   Test to see if using hydrostatic or non-hydrostatic atmosphere
+#######################################################################
+
+ASKHYDRO:
+
+if( $HRCODE == 'c1440' | \
+	 $HRCODE == 'c768'  | \
+    $HRCODE == 'c1536' | \
+    $HRCODE == 'c3072' ) then
+    set DEFAULT_HYDROSTATIC = FALSE
+else
+	 set DEFAULT_HYDROSTATIC = TRUE
+endif
+
+echo "Use ${C1}Hydrostatic Atmosphere${CN}? (Default: ${C2}YES${CN} or ${C2}TRUE${CN} for Grid Resolutions <= C720)"
+set   USE_HYDROSTATIC = $<
+
+if( .$USE_HYDROSTATIC == . ) then
+	set USE_HYDROSTATIC = $DEFAULT_HYDROSTATIC
+else
+	set USE_HYDROSTATIC = `echo $USE_HYDROSTATIC | tr "[:lower:]" "[:upper:]"`
+	if(  $USE_HYDROSTATIC == "Y"     | \
+        $USE_HYDROSTATIC == "YES"   | \
+        $USE_HYDROSTATIC == "T"     | \
+        $USE_HYDROSTATIC == "TRUE"  ) set USE_HYDROSTATIC = TRUE
+   if(  $USE_HYDROSTATIC == "N"     | \
+        $USE_HYDROSTATIC == "NO"    | \
+        $USE_HYDROSTATIC == "F"     | \
+        $USE_HYDROSTATIC == "FALSE" ) set USE_HYDROSTATIC = FALSE
+
+   if( "$USE_HYDROSTATIC" != "TRUE" & "$USE_HYDROSTATIC" != "FALSE" ) then
+      echo
+      echo "Use ${C1}Hydrostatic Atmosphere${CN} must be set equal to ${C2}TRUE/YES${CN} or ${C2}FALSE/NO${CN}!"
+      goto ASKHYDRO
+   endif
+endif
+
+
+#######################################################################
+#            Test to see if you want to use ioserver
+#######################################################################
+
+ASKIOS:
+
+if( $HRCODE == 'c180'  | \
+    $HRCODE == 'c360'  | \
+    $HRCODE == 'c720'  | \
+    $HRCODE == 'c1440' | \
+    $HRCODE == 'c768'  | \
+    $HRCODE == 'c1536' | \
+    $HRCODE == 'c3072' ) then
+
+    set DEFAULT_DO_IOS = TRUE
+    echo "Do you wish to ${C1}IOSERVER${CN}? (Default: ${C2}YES${CN} or ${C2}TRUE${CN})"
+else
+    set DEFAULT_DO_IOS = FALSE
+    echo "Do you wish to ${C1}IOSERVER${CN}? (Default: ${C2}NO${CN} or ${C2}FALSE${CN})"
+endif
+
+set   DO_IOS  = $<
+if( .$DO_IOS == . ) then
+   set   DO_IOS  = $DEFAULT_DO_IOS
+else
+   set   DO_IOS  = `echo   $DO_IOS | tr "[:lower:]" "[:upper:]"`
+   if(  $DO_IOS == "Y"     | \
+        $DO_IOS == "YES"   | \
+        $DO_IOS == "T"     | \
+        $DO_IOS == "TRUE"  ) set DO_IOS = TRUE
+   if(  $DO_IOS == "N"     | \
+        $DO_IOS == "NO"    | \
+        $DO_IOS == "F"     | \
+        $DO_IOS == "FALSE" ) set DO_IOS = FALSE
+
+   if( $DO_IOS != "TRUE" & $DO_IOS != "FALSE" ) then
+      echo
+      echo "${C1}IOSERVER${CN} must be set equal to ${C2}TRUE/YES${CN} or ${C2}FALSE/NO${CN}!"
+      goto ASKIOS
+   endif
+endif
+
+if ( $DO_IOS == "TRUE" ) then
+   set USE_IOSERVER = 1
+else
+   set USE_IOSERVER = 0
+endif
+
+#######################################################################
+#                 What Processor Should We Run On?
+#######################################################################
+
+ASKPROC:
+
+if ( $SITE == 'NCCS' ) then
+   echo "Enter the ${C1}Processor Type${CN} you wish to run on:"
+   echo "   ${C2}hasw (Haswell)${CN} (default)"
+   if (-e /etc/os-release) then
+      echo "   ${C2}sky  (Skylake)${CN}"
+   endif
+   echo " "
+   set MODEL = `echo $<`
+   set MODEL = `echo $MODEL | tr "[:upper:]" "[:lower:]"`
+   if ( .$MODEL == .) then
+      set MODEL = 'hasw'
+   endif
+
+   if( $MODEL != 'hasw' & \
+       $MODEL != 'sky' ) goto ASKPROC
+
+   if (     $MODEL == 'hasw') then
+      set NCPUS_PER_NODE = 28
+   else if ($MODEL == 'sky') then
+      set NCPUS_PER_NODE = 40
+   endif
+
+else if ( $SITE == 'NAS' ) then
+   echo "Enter the ${C1}Processor Type${CN} you wish to run on:"
+   echo "   ${C2}has (Haswell)${CN}"
+   echo "   ${C2}bro (Broadwell)${CN}"
+   echo "   ${C2}sky (Skylake)${CN} (default)"
+   echo "   ${C2}cas (Cascade Lake)${CN}"
+   #echo "   ${C2}rom (AMD Rome)${CN}"
+   echo " "
+   echo " NOTE: Due to how FV3 is compiled by default, Sandy Bridge"
+   echo "       and Ivy Bridge are not supported by current GEOS"
+   echo " "
+   set MODEL = `echo $<`
+   set MODEL = `echo $MODEL | tr "[:upper:]" "[:lower:]"`
+   if ( .$MODEL == .) then
+      set MODEL = 'sky'
+   endif
+
+   if( $MODEL != 'has' & \
+       $MODEL != 'bro' & \
+       $MODEL != 'sky' & \
+       $MODEL != 'cas' & \
+       $MODEL != 'rom' ) goto ASKPROC
+
+   # Some processors have weird names at NAS
+   # ---------------------------------------
+
+   if ($MODEL == bro ) then
+      set MODEL = 'bro_ele'
+   else if ($MODEL == sky) then
+      set MODEL = 'sky_ele'
+   else if ($MODEL == cas) then
+      set MODEL = 'cas_ait'
+   else if ($MODEL == rom) then
+      set MODEL = 'rom_ait'
+   endif
+
+   if (     $MODEL == 'san') then
+      set NCPUS_PER_NODE = 16
+   else if ($MODEL == 'ivy') then
+      set NCPUS_PER_NODE = 20
+   else if ($MODEL == 'has') then
+      set NCPUS_PER_NODE = 24
+   else if ($MODEL == 'bro_ele') then
+      set NCPUS_PER_NODE = 28
+   else if ($MODEL == 'sky_ele') then
+      set NCPUS_PER_NODE = 40
+   else if ($MODEL == 'cas_ait') then
+      set NCPUS_PER_NODE = 40
+   else if ($MODEL == 'rom_ait') then
+      set NCPUS_PER_NODE = 128
+      set USE_IOSERVER = 0
+      echo "WARNING WARNING: At present there are issues with IOSERVER and Rome. Turning off IOSERVER!"
+   endif
+
+else
+   set MODEL = 'UNKNOWN'
 endif
 
 
@@ -312,7 +465,7 @@ set BCSTAG   = Icarus_Reynolds
 # Set IAU-Forcing and Bias Correction OFF
 # ---------------------------------------
      set FORCEDAS = "#"
-     set FORCEGCM = "#"
+     set FORCECTM = "#"
 
 # Set Default Convert Parameters
 # ------------------------------
@@ -323,6 +476,10 @@ set BCSTAG   = Icarus_Reynolds
 # -------------------------------
      set NUM_READERS = 1
      set NUM_WRITERS = 1
+
+# Set DEFAULT IOSERVER Parameters
+# -------------------------------
+     set DEF_IOS_NDS      = 1
 
 # Default Run Parameters
 # ----------------------
@@ -336,13 +493,13 @@ if( $GEOSCTM_IM ==  "c12" ) then
      set GEOSCTM_JM  = `expr $GEOSCTM_IM \* 6`
      set       NX = 2
      set       NY = `expr $NX \* 6`
-     set   HYDROSTATIC = TRUE
+     set   HYDROSTATIC = $USE_HYDROSTATIC
      set HIST_IM  = `expr $GEOSCTM_IM \* 4`
      set HIST_JM  = `expr $GEOSCTM_IM \* 2 + 1`
      set GRID_FILE = "Gnomonic_c${GEOSCTM_IM}.dat"
      set JOB_SGMT = 00000015
      set NUM_SGMT = 20
-     set ATMOStag = CF0012x6C
+     set ATMOS_RES = CF0012x6C
      set POST_NDS = 4
      set   CNV_NX = 1
      set   CNV_NY = 6
@@ -357,13 +514,13 @@ if( $GEOSCTM_IM ==  "c24" ) then
      set GEOSCTM_JM  = `expr $GEOSCTM_IM \* 6`
      set       NX = 4
      set       NY = `expr $NX \* 6`
-     set   HYDROSTATIC = TRUE
+     set   HYDROSTATIC = $USE_HYDROSTATIC
      set HIST_IM  = `expr $GEOSCTM_IM \* 4`
      set HIST_JM  = `expr $GEOSCTM_IM \* 2 + 1`
      set GRID_FILE = "Gnomonic_c${GEOSCTM_IM}.dat"
      set JOB_SGMT = 00000015
      set NUM_SGMT = 20
-     set ATMOStag = CF0024x6C
+     set ATMOS_RES = CF0024x6C
      set POST_NDS = 4
      set   CNV_NX = 1
      set   CNV_NY = 6
@@ -378,13 +535,13 @@ if( $GEOSCTM_IM ==  "c48" ) then
      set GEOSCTM_JM  = `expr $GEOSCTM_IM \* 6`
      set       NX = 4
      set       NY = `expr $NX \* 6`
-     set   HYDROSTATIC = TRUE
+     set   HYDROSTATIC = $USE_HYDROSTATIC
      set HIST_IM  = 180
      set HIST_JM  =  91
      set GRID_FILE = "Gnomonic_c${GEOSCTM_IM}.dat"
      set JOB_SGMT = 00000015
      set NUM_SGMT = 20
-     set ATMOStag = CF0048x6C
+     set ATMOS_RES = CF0048x6C
      set POST_NDS = 4
 endif
 if( $GEOSCTM_IM ==  "c90" ) then
@@ -397,13 +554,13 @@ if( $GEOSCTM_IM ==  "c90" ) then
      set GEOSCTM_JM  = `expr $GEOSCTM_IM \* 6`
      set       NX = 4
      set       NY = `expr $NX \* 6`
-     set HYDROSTATIC = TRUE
+     set HYDROSTATIC = $USE_HYDROSTATIC
      set HIST_IM  = `expr $GEOSCTM_IM \* 4`
      set HIST_JM  = `expr $GEOSCTM_IM \* 2 + 1`
      set GRID_FILE = "Gnomonic_c${GEOSCTM_IM}.dat"
      set JOB_SGMT = 00000032
      set NUM_SGMT = 4
-     set ATMOStag = CF0090x6C
+     set ATMOS_RES = CF0090x6C
      set POST_NDS = 8
 endif
 if( $GEOSCTM_IM ==  "c180" ) then
@@ -416,15 +573,16 @@ if( $GEOSCTM_IM ==  "c180" ) then
      set GEOSCTM_JM  = `expr $GEOSCTM_IM \* 6`
      set       NX = 6
      set       NY = `expr $NX \* 6`
-     set HYDROSTATIC = TRUE
+     set HYDROSTATIC = $USE_HYDROSTATIC
      set HIST_IM  = `expr $GEOSCTM_IM \* 4`
      set HIST_JM  = `expr $GEOSCTM_IM \* 2 + 1`
      set GRID_FILE = "Gnomonic_c${GEOSCTM_IM}.dat"
      set NUM_READERS = 2
      set JOB_SGMT = 00000016
      set NUM_SGMT = 1
-     set ATMOStag = CF0180x6C
+     set ATMOS_RES = CF0180x6C
      set POST_NDS = 8
+     set DEF_IOS_NDS = 2
 endif
 if( $GEOSCTM_IM == "c360" ) then
      set       DT = 300
@@ -436,16 +594,17 @@ if( $GEOSCTM_IM == "c360" ) then
      set GEOSCTM_JM  = `expr $GEOSCTM_IM \* 6`
      set       NX = 12 
      set       NY = `expr $NX \* 6`
-     set HYDROSTATIC = TRUE
+     set HYDROSTATIC = $USE_HYDROSTATIC
      set HIST_IM  = `expr $GEOSCTM_IM \* 4`
      set HIST_JM  = `expr $GEOSCTM_IM \* 2 + 1`
      set GRID_FILE = "Gnomonic_c${GEOSCTM_IM}.dat"
      set NUM_READERS = 4
      set JOB_SGMT = 00000005
      set NUM_SGMT = 1
-     set ATMOStag = CF0360x6C
+     set ATMOS_RES = CF0360x6C
      set   CNV_NX = 4
      set POST_NDS = 12
+     set DEF_IOS_NDS = 2
 endif
 if( $GEOSCTM_IM == "c500" ) then
      set       DT = 300
@@ -457,17 +616,18 @@ if( $GEOSCTM_IM == "c500" ) then
      set GEOSCTM_JM  = `expr $GEOSCTM_IM \* 6`
      set       NX = 12
      set       NY = `expr $NX \* 6`
-     set HYDROSTATIC = TRUE
+     set HYDROSTATIC = $USE_HYDROSTATIC
      set HIST_IM  = `expr $GEOSCTM_IM \* 4`
      set HIST_JM  = `expr $GEOSCTM_IM \* 2 + 1`
      set GRID_FILE = "Gnomonic_c${GEOSCTM_IM}.dat"
      set NUM_READERS = 4
      set JOB_SGMT = 00000005
      set NUM_SGMT = 1
-     set ATMOStag = CF0500x6C
+     set ATMOS_RES = CF0500x6C
      set   CNV_NX = 8
      set POST_NDS = 12
      set USE_SHMEM = 1
+     set DEF_IOS_NDS = 2
 endif
 if( $GEOSCTM_IM == "c720" ) then
      set       DT = 225
@@ -479,17 +639,18 @@ if( $GEOSCTM_IM == "c720" ) then
      set GEOSCTM_JM  = `expr $GEOSCTM_IM \* 6`
      set       NX = 16
      set       NY = `expr $NX \* 6`
-     set HYDROSTATIC = TRUE
+     set HYDROSTATIC = $USE_HYDROSTATIC
      set HIST_IM  = `expr $GEOSCTM_IM \* 4`
      set HIST_JM  = `expr $GEOSCTM_IM \* 2 + 1`
      set GRID_FILE = "Gnomonic_c${GEOSCTM_IM}.dat"
      set NUM_READERS = 6
      set JOB_SGMT = 00000005
      set NUM_SGMT = 1
-     set ATMOStag = CF0720x6C
+     set ATMOS_RES = CF0720x6C
      set   CNV_NX = 8
      set POST_NDS = 16
      set USE_SHMEM = 1
+     set DEF_IOS_NDS = 3
 endif
 if( $GEOSCTM_IM == "c1440" ) then
      set       DT = 150
@@ -501,17 +662,88 @@ if( $GEOSCTM_IM == "c1440" ) then
      set GEOSCTM_JM  = `expr $GEOSCTM_IM \* 6`
      set       NX = 30 
      set       NY = `expr $NX \* 6`
-     set HYDROSTATIC = FALSE
+     set HYDROSTATIC = $USE_HYDROSTATIC
      set HIST_IM  = `expr $GEOSCTM_IM \* 4`
      set HIST_JM  = `expr $GEOSCTM_IM \* 2 + 1`
      set GRID_FILE = "Gnomonic_c${GEOSCTM_IM}.dat"
      set NUM_READERS = 6
      set JOB_SGMT = 00000001
      set NUM_SGMT = 1
-     set ATMOStag = CF1440x6C
+     set ATMOS_RES = CF1440x6C
      set   CNV_NX = 8
      set POST_NDS = 32
      set USE_SHMEM = 1
+     set DEF_IOS_NDS = 4
+endif
+# DYAMOND Resolutions
+if( $GEOSCTM_IM == "c768" ) then
+     set       DT = 180
+     set SOLAR_DT = 3600
+     set IRRAD_DT = 3600
+     set OCEAN_DT = $IRRAD_DT
+     set  CHEM_DT = 900
+     set GEOSCTM_IM  = 768
+     set GEOSCTM_JM  = `expr $GEOSCTM_IM \* 6`
+     set       NX = 32
+     set       NY = `expr $NX \* 6`
+     set HYDROSTATIC = $USE_HYDROSTATIC
+     set HIST_IM  = `expr $GEOSCTM_IM \* 4`
+     set HIST_JM  = `expr $GEOSCTM_IM \* 2 + 1`
+     set GRID_FILE = "Gnomonic_c${GEOSCTM_IM}.dat"
+     set NUM_READERS = 6
+     set JOB_SGMT = 00000005
+     set NUM_SGMT = 1
+     set ATMOS_RES = CF0768x6C
+     set   CNV_NX = 8
+     set POST_NDS = 16
+     set USE_SHMEM = 1
+     set DEF_IOS_NDS = 3
+endif
+if( $GEOSCTM_IM == "c1536" ) then
+     set       DT = 90
+     set SOLAR_DT = 3600
+     set IRRAD_DT = 3600
+     set OCEAN_DT = $IRRAD_DT
+     set  CHEM_DT = 900
+     set GEOSCTM_IM  = 1536
+     set GEOSCTM_JM  = `expr $GEOSCTM_IM \* 6`
+     set       NX = 64
+     set       NY = `expr $NX \* 6`
+     set HYDROSTATIC = $USE_HYDROSTATIC
+     set HIST_IM  = `expr $GEOSCTM_IM \* 4`
+     set HIST_JM  = `expr $GEOSCTM_IM \* 2 + 1`
+     set GRID_FILE = "Gnomonic_c${GEOSCTM_IM}.dat"
+     set NUM_READERS = 6
+     set JOB_SGMT = 00000005
+     set NUM_SGMT = 1
+     set ATMOS_RES = CF1536x6C
+     set   CNV_NX = 8
+     set POST_NDS = 16
+     set USE_SHMEM = 1
+     set DEF_IOS_NDS = 4
+endif
+if( $GEOSCTM_IM == "c3072" ) then
+     set       DT = 45
+     set SOLAR_DT = 3600
+     set IRRAD_DT = 3600
+     set OCEAN_DT = $IRRAD_DT
+     set  CHEM_DT = 900
+     set GEOSCTM_IM  = 3072
+     set GEOSCTM_JM  = `expr $GEOSCTM_IM \* 6`
+     set       NX = 64
+     set       NY = `expr $NX \* 6`
+     set HYDROSTATIC = $USE_HYDROSTATIC
+     set HIST_IM  = `expr $GEOSCTM_IM \* 4`
+     set HIST_JM  = `expr $GEOSCTM_IM \* 2 + 1`
+     set GRID_FILE = "Gnomonic_c${GEOSCTM_IM}.dat"
+     set NUM_READERS = 6
+     set JOB_SGMT = 00000005
+     set NUM_SGMT = 1
+     set ATMOS_RES = CF3072x6C
+     set   CNV_NX = 8
+     set POST_NDS = 16
+     set USE_SHMEM = 1
+     set DEF_IOS_NDS = 5
 endif
 
 set IS_FCST = 0
@@ -731,102 +963,196 @@ else
     echo
   endif
 endif
-
 #######################################################################
 #                  Architecture Specific Variables
 #######################################################################
 
-@ NPES = $NX * $NY
+@ MODEL_NPES = $NX * $NY
+
+if ( $DO_IOS == TRUE ) then
+   set IOS_NDS = $DEF_IOS_NDS
+else
+   set IOS_NDS = 0
+endif
+
 @ CNV_NPES = $CNV_NX * $CNV_NY
 # Here we need to convert POST_NDS to total tasks. Using 16 cores
 # per task as a good default
 @ POST_NPES = $POST_NDS * 16
 
-              setenv     RUN_N  `echo $EXPID | cut -b1-11`_RUN                         # RUN      Job Name
-              setenv     RUN_FN `echo $EXPID | cut -b1-11`_FCST                        # Forecast Job Name
-              setenv    POST_N  `echo $EXPID | cut -b1-10`_POST                        # POST     Job Name
-              setenv    PLOT_N  `echo $EXPID | cut -b1-11`_PLT                         # PLOT     Job Name
-              setenv    MOVE_N  `echo $EXPID | cut -b1-11`_MOVE                        # MOVE     Job Name
-              setenv ARCHIVE_N  `echo $EXPID | cut -b1-10`_ARCH                        # ARCHIVE  Job Name
-              setenv REGRESS_N  `echo $EXPID | cut -b1-10`_RGRS                        # REGRESS  Job Name
-              setenv CONVERT_N  `echo $EXPID | cut -b1-11`_CNV                         # CONVERT  Job Name
+# Longer job names are now supported with SLURM and PBS. Limits seem to be 1024 characters with SLURM
+# and 230 with PBS. To be safe, we will limit to 200
+
+              setenv     RUN_N  `echo $EXPID | cut -b1-200`_RUN                         # RUN      Job Name
+              setenv     RUN_FN `echo $EXPID | cut -b1-200`_FCST                        # Forecast Job Name
+              setenv    POST_N  `echo $EXPID | cut -b1-199`_POST                        # POST     Job Name
+              setenv    PLOT_N  `echo $EXPID | cut -b1-200`_PLT                         # PLOT     Job Name
+              setenv    MOVE_N  `echo $EXPID | cut -b1-200`_MOVE                        # MOVE     Job Name
+              setenv ARCHIVE_N  `echo $EXPID | cut -b1-199`_ARCH                        # ARCHIVE  Job Name
+              setenv REGRESS_N  `echo $EXPID | cut -b1-199`_RGRS                        # REGRESS  Job Name
+              setenv CONVERT_N  `echo $EXPID | cut -b1-200`_CNV                         # CONVERT  Job Name
 
 # Default converter time
               setenv CONVERT_T  "0:15:00"                                              # Wallclock Time   for ctm_convert.j
 
 if( $SITE == 'NAS' ) then
+              setenv BATCH_CMD "qsub"                 # PBS Batch command
               setenv BATCH_GROUP "PBS -W group_list="                                  # PBS Syntax for GROUP
-              setenv     RUN_FT "6:00:00"                                              # Wallclock Time   - UNUSED
-              setenv     RUN_T  "8:00:00"                                              # Wallclock Time   for ctm_run.j
-              setenv    POST_T  "8:00:00"                                              # Wallclock Time   for ctm_post.j
-              setenv    PLOT_T  "8:00:00"                                              # Wallclock Time   for ctm_plot.j
-              setenv ARCHIVE_T  "8:00:00"                                              # Wallclock Time   for ctm_archive.j
+              setenv BATCH_TIME "PBS -l walltime="    # PBS Syntax for walltime
+              setenv BATCH_JOBNAME "PBS -N "          # PBS Syntax for job name
+              setenv BATCH_OUTPUTNAME "PBS -o "       # PBS Syntax for job output name
+              setenv BATCH_JOINOUTERR "PBS -j oe -k oed"    # PBS Syntax for joining output and error
+              setenv     RUN_FT "6:00:00"             # Wallclock Time   for ctm_forecast.j
+              setenv     RUN_T  "8:00:00"             # Wallclock Time   for ctm_run.j
+              setenv    POST_T  "8:00:00"             # Wallclock Time   for ctm_post.j
+              setenv    PLOT_T  "8:00:00"             # Wallclock Time   for ctm_plot.j
+              setenv ARCHIVE_T  "8:00:00"             # Wallclock Time   for ctm_archive.j
               if( $GPU == "TRUE" ) then
-                 set NCPUS = 16                                                        # CPUS per node
+                 set NCPUS_PER_NODE = 16              # CPUS per node
                  set MODEL = "san_gpu"                                                 # Model of CPU
                  set QTYPE = "gpu_k40"                                                 # Queue to use
               else
-                 set NCPUS = 28                                                        # CPUS per node
-                 set MODEL = "bro"                                                     # Model of CPU
                  set QTYPE = "normal"                                                  # Queue to use
               endif
-              @ NCUS = `echo "($NPES + $NCPUS - 1)/$NCPUS" | bc`
-              setenv     RUN_Q  "PBS -q ${QTYPE}"                                                           # batch queue name for ctm_run.j
-              setenv     RUN_P  "PBS -l select=${NCUS}:ncpus=${NCPUS}:mpiprocs=${NCPUS}:model=${MODEL}"     # PE Configuration for ctm_run.j
-              setenv    RUN_FP  "PBS -l select=24:ncpus=${NCPUS}:mpiprocs=${NCPUS}:model=${MODEL}"          # PE Configuration - UNUSED
-              setenv    POST_Q  "PBS -q normal"                                                             # batch queue name for ctm_post.j
-              setenv    PLOT_Q  "PBS -q normal"                                                             # batch queue name for ctm_plot.j
-              setenv    MOVE_Q  "PBS -q normal"                                                             # batch queue name for ctm_moveplot.j
-              setenv ARCHIVE_Q  "PBS -q normal"                                                             # batch queue name for ctm_archive.j
-              setenv    POST_P  "PBS -l select=${POST_NDS}:ncpus=${NCPUS}:mpiprocs=${NCPUS}:model=${MODEL}" # PE Configuration for ctm_post.j
-              setenv    PLOT_P  "PBS -l select=2:ncpus=${NCPUS}:mpiprocs=${NCPUS}:model=${MODEL}"           # PE Configuration for ctm_plot.j
-              setenv ARCHIVE_P  "PBS -l select=1:ncpus=${NCPUS}:mpiprocs=${NCPUS}:model=${MODEL}"           # PE Configuration for ctm_archive.j
-              setenv CONVERT_P  "PBS -l select=${CNV_NX}:ncpus=${NCPUS}:mpiprocs=${NCPUS}:model=${MODEL}"   # PE Configuration for ctm_convert.j
-              setenv BCSDIR     /nobackup/gmao_SIteam/ModelData/bcs/Icarus/$BCSTAG                          # location of Boundary Conditions
+
+              #@ NODES  = `echo "($MODEL_NPES + $NCPUS_PER_NODE - 1)/$NCPUS_PER_NODE" | bc`
+              @ NODES  = `echo "( ($MODEL_NPES + $NCPUS_PER_NODE) + ($IOS_NDS * $NCPUS_PER_NODE) - 1)/$NCPUS_PER_NODE" | bc`
+              @ NPCUS = `echo "($POST_NPES + $NCPUS_PER_NODE - 1)/$NCPUS_PER_NODE" | bc`
+
+              setenv     RUN_Q  "PBS -q ${QTYPE}"                                                                              # batch queue name for ctm_run.j
+              setenv     RUN_P  "PBS -l select=${NODES}:ncpus=${NCPUS_PER_NODE}:mpiprocs=${NCPUS_PER_NODE}:model=${MODEL}"     # PE Configuration for ctm_run.j
+              setenv    RUN_FP  "PBS -l select=24:ncpus=${NCPUS_PER_NODE}:mpiprocs=${NCPUS_PER_NODE}:model=${MODEL}"           # PE Configuration for ctm_forecast.j
+              setenv    POST_Q  "PBS -q normal"                                                                                # batch queue name for ctm_post.j
+              setenv    PLOT_Q  "PBS -q normal"                                                                                # batch queue name for ctm_plot.j
+              setenv    MOVE_Q  "PBS -q normal"                                                                                # batch queue name for ctm_moveplot.j
+              setenv ARCHIVE_Q  "PBS -q normal"                                                                                # batch queue name for ctm_archive.j
+              setenv    POST_P  "PBS -l select=${NPCUS}:ncpus=${NCPUS_PER_NODE}:mpiprocs=${NCPUS_PER_NODE}:model=${MODEL}"     # PE Configuration for ctm_post.j
+              setenv    PLOT_P  "PBS -l select=1:ncpus=${NCPUS_PER_NODE}:mpiprocs=1:model=${MODEL}"                            # PE Configuration for ctm_plot.j
+              setenv ARCHIVE_P  "PBS -l select=1:ncpus=${NCPUS_PER_NODE}:mpiprocs=${NCPUS_PER_NODE}:model=${MODEL}"            # PE Configuration for ctm_archive.j
+              setenv CONVERT_P  "PBS -l select=${CNV_NX}:ncpus=${NCPUS_PER_NODE}:mpiprocs=${NCPUS_PER_NODE}:model=${MODEL}"    # PE Configuration for ctm_convert.j
+              setenv    MOVE_P  "PBS -l select=1:ncpus=1"                                                                      # PE Configuration for ctm_moveplot.j
+
+              setenv BCSDIR     /nobackup/gmao_SIteam/ModelData/bcs/${LSM_BCS}/${LSM_BCS}_${OCEAN_TAG}      # location of Boundary Conditions
+              setenv REPLAY_ANA_EXPID    ONLY_MERRA2_SUPPORTED                                              # Default Analysis Experiment for REPLAY
+              setenv REPLAY_ANA_LOCATION ONLY_MERRA2_SUPPORTED                                              # Default Analysis Location   for REPLAY
+              setenv M2_REPLAY_ANA_LOCATION /nobackup/gmao_SIteam/ModelData/verification/MERRA-2            # Default Analysis Location   for M2 REPLAY
+
+              if( ${OGCM_IM}x${OGCM_JM} == "1440x720" ) then
+                   setenv SSTDIR     /nobackup/gmao_SIteam/ModelData/fvInput/g5gcm/bcs/SST/${OGCM_IM}x${OGCM_JM}  # location of SST Boundary Conditions
+              else
+                   setenv SSTDIR     /nobackup/gmao_SIteam/ModelData/fvInput/g5gcm/bcs/realtime/@SSTNAME/${OGCM_IM}x${OGCM_JM}  # location of SST Boundary Conditions
+              endif
               setenv CHMDIR     /nobackup/gmao_SIteam/ModelData/fvInput_nc3            # locations of Aerosol Chemistry BCs
               setenv WRKDIR     /nobackup/$LOGNAME                                     # user work directory
-              setenv COUPLEDIR  /nobackup/gmao_SIteam/ModelData/coupled/Forcings       # Coupled Ocean/Atmos Forcing - UNUSED
+              setenv COUPLEDIR  /nobackup/gmao_SIteam/ModelData/coupled/Forcings       # Coupled Ocean/Atmos Forcing
               setenv CPEXEC    'mcp -a'                                                # Copy utility for large copies
               setenv TAREXEC    mtar                                                   # Tar utility for large archives
 else if( $SITE == 'NCCS' ) then
-              setenv BATCH_GROUP "SBATCH -A "                                          # PBS Syntax for GROUP
-              setenv     RUN_FT "06:00:00"                                             # Wallclock Time   - UNUSED
+              setenv BATCH_CMD "sbatch"                                                # SLURM Batch command
+              setenv BATCH_GROUP "SBATCH --account="                                   # SLURM Syntax for account name
+              setenv BATCH_TIME "SBATCH --time="                                       # SLURM Syntax for walltime
+              setenv BATCH_JOBNAME "SBATCH --job-name="                                # SLURM Syntax for job name
+              setenv BATCH_OUTPUTNAME "SBATCH --output="                               # SLURM Syntax for job output name
+              setenv BATCH_JOINOUTERR "DELETE"                                         # SLURM joins out and err by default
+              setenv     RUN_FT "06:00:00"                                             # Wallclock Time   for ctm_forecast.j
               setenv     RUN_T  "12:00:00"                                             # Wallclock Time   for ctm_run.j
               setenv    POST_T  "8:00:00"                                              # Wallclock Time   for ctm_post.j
               setenv    PLOT_T  "12:00:00"                                             # Wallclock Time   for ctm_plot.j
               setenv ARCHIVE_T  "2:00:00"                                              # Wallclock Time   for ctm_archive.j
               if( $GPU == "TRUE" ) then
-                 setenv  RUN_Q  "SBATCH --constraint=k40"                              # batch queue name for ctm_run.j
-              else
-                 setenv  RUN_Q  "SBATCH --constraint=hasw"                             # batch queue name for ctm_run.j
+                 set NCPUS_PER_NODE = 16                                         # CPUS per node
+                 set MODEL = "k40"                                               # Model of CPU
               endif
-              setenv    RUN_P   "SBATCH --ntasks=${NPES}"                              # PE Configuration for ctm_run.j
-              setenv    RUN_FP  "SBATCH --ntasks=\&NPES"                               # PE Configuration - UNUSED
-              setenv    POST_Q  "SBATCH --constraint=hasw"                             # batch queue name for ctm_post.j
-              setenv    PLOT_Q  "SBATCH --constraint=hasw"                             # batch queue name for ctm_plot.j
-              setenv    MOVE_Q  "SBATCH --partition=datamove"                          # batch queue name for ctm_moveplot.j
-              setenv ARCHIVE_Q  "SBATCH --partition=datamove"                          # batch queue name for ctm_archive.j
+
+              #@ NODES  = `echo "($MODEL_NPES + $NCPUS_PER_NODE - 1)/$NCPUS_PER_NODE" | bc`
+              @ NODES  = `echo "( ($MODEL_NPES + $NCPUS_PER_NODE) + ($IOS_NDS * $NCPUS_PER_NODE) - 1)/$NCPUS_PER_NODE" | bc`
+              @ NPCUS = `echo "($POST_NPES + $NCPUS_PER_NODE - 1)/$NCPUS_PER_NODE" | bc`
+
+              setenv    RUN_Q   "SBATCH --constraint=${MODEL}"                                # batch queue name for ctm_run.j
+              setenv    RUN_P   "SBATCH --nodes=${NODES} --ntasks-per-node=${NCPUS_PER_NODE}" # PE Configuration for ctm_run.j
+              setenv    RUN_FP  "SBATCH --nodes=${NODES} --ntasks-per-node=${NCPUS_PER_NODE}" # PE Configuration for ctm_forecast.j
+              setenv    POST_Q  "SBATCH --constraint=${MODEL}"                                # batch queue name for ctm_post.j
+              setenv    PLOT_Q  "SBATCH --constraint=${MODEL}"                                # batch queue name for ctm_plot.j
+              setenv    MOVE_Q  "SBATCH --partition=datamove"                                 # batch queue name for ctm_moveplot.j
+              setenv ARCHIVE_Q  "SBATCH --partition=datamove"                                 # batch queue name for ctm_archive.j
+              setenv    POST_P  "SBATCH --nodes=${NPCUS} --ntasks-per-node=${NCPUS_PER_NODE}" # PE Configuration for ctm_post.j
+              setenv    PLOT_P  "SBATCH --nodes=4 --ntasks=4"                                 # PE Configuration for ctm_plot.j
+              setenv ARCHIVE_P  "SBATCH --ntasks=1"                                           # PE Configuration for ctm_archive.j
+              setenv CONVERT_P  "SBATCH --ntasks=${CNV_NPES}"                                 # PE Configuration for ctm_convert.j
+              setenv    MOVE_P  "SBATCH --ntasks=1"                                           # PE Configuration for ctm_moveplot.j
+
+              setenv BCSDIR  /discover/nobackup/ltakacs/bcs/${LSM_BCS}/${LSM_BCS}_${OCEAN_TAG}  # location of Boundary Conditions
+              setenv REPLAY_ANA_EXPID x0039                                                     # Default Analysis Experiment for REPLAY
+              setenv REPLAY_ANA_LOCATION /discover/nobackup/projects/gmao/g6dev/ltakacs/x0039   # Default Analysis Location   for REPLAY
+              setenv M2_REPLAY_ANA_LOCATION /discover/nobackup/projects/gmao/share/gmao_ops/verification/MERRA-2 # Default Analysis Location   for M2 REPLAY
+
+              if( ${OGCM_IM}x${OGCM_JM} == "1440x720" ) then
+                   setenv SSTDIR     $SHARE/dao_ops/fvInput/g5gcm/bcs/SST/${OGCM_IM}x${OGCM_JM} # location of SST Boundary Conditions
+              else
+                   setenv SSTDIR     $SHARE/dao_ops/fvInput/g5gcm/bcs/realtime/@SSTNAME/${OGCM_IM}x${OGCM_JM} # location of SST Boundary Conditions
+              endif
+              setenv CHMDIR     $SHARE/dao_ops/fvInput_nc3                             # locations of Aerosol Chemistry BCs
+              setenv WRKDIR     /discover/nobackup/$LOGNAME                            # user work directory
+              setenv COUPLEDIR  /discover/nobackup/yvikhlia/coupled/Forcings           # Coupled Ocean/Atmos Forcing
+              setenv CPEXEC     /bin/cp                                                # Copy utility for large copies
+              setenv TAREXEC    tar
+else if( $SITE == 'AWS' ) then
+              setenv BATCH_CMD "sbatch"                                                # SLURM Batch command
+              setenv BATCH_GROUP DELETE                                                # SLURM Syntax for account name
+              setenv BATCH_TIME "SBATCH --time="                                       # SLURM Syntax for walltime
+              setenv BATCH_JOBNAME "SBATCH --job-name="                                # SLURM Syntax for job name
+              setenv BATCH_OUTPUTNAME "SBATCH --output="                               # SLURM Syntax for job output name
+              setenv BATCH_JOINOUTERR "DELETE"                                         # SLURM joins out and err by default
+              setenv     RUN_FT "06:00:00"                                             # Wallclock Time   for ctm_forecast.j
+              setenv     RUN_T  "12:00:00"                                             # Wallclock Time   for ctm_run.j
+              setenv    POST_T  "8:00:00"                                              # Wallclock Time   for ctm_post.j
+              setenv    PLOT_T  "12:00:00"                                             # Wallclock Time   for ctm_plot.j
+              setenv ARCHIVE_T  "1:00:00"                                              # Wallclock Time   for ctm_archive.j
+              setenv  RUN_Q     DELETE                                                 # batch queue name for ctm_run.j
+              setenv  RUN_P   "SBATCH --ntasks=${MODEL_NPES}"                          # PE Configuration for ctm_run.j
+              setenv  RUN_FP  "SBATCH --ntasks=${MODEL_NPES}"                          # PE Configuration for ctm_forecast.j
+              setenv    POST_Q  NULL                                                   # batch queue name for ctm_post.j
+              setenv    PLOT_Q  NULL                                                   # batch queue name for ctm_plot.j
+              setenv    MOVE_Q  NULL                                                   # batch queue name for ctm_moveplot.j
+              setenv ARCHIVE_Q  NULL                                                   # batch queue name for ctm_archive.j
               setenv    POST_P  "SBATCH --ntasks=${POST_NPES}"                         # PE Configuration for ctm_post.j
               setenv    PLOT_P  "SBATCH --nodes=4 --ntasks=4"                          # PE Configuration for ctm_plot.j
               setenv ARCHIVE_P  "SBATCH --ntasks=1"                                    # PE Configuration for ctm_archive.j
               setenv CONVERT_P  "SBATCH --ntasks=${CNV_NPES}"                          # PE Configuration for ctm_convert.j
-              setenv BCSDIR     /discover/nobackup/ltakacs/bcs/Icarus/$BCSTAG          # location of Boundary Conditions
-              setenv CHMDIR     $SHARE/dao_ops/fvInput_nc3                             # locations of Aerosol Chemistry BCs
-              setenv WRKDIR     /discover/nobackup/$LOGNAME                            # user work directory
-              setenv COUPLEDIR  /discover/nobackup/yvikhlia/coupled/Forcings           # Coupled Ocean/Atmos Forcing - UNUSED
+              setenv    MOVE_P  "SBATCH --ntasks=1"                                    # PE Configuration for ctm_moveplot.j
+
+              setenv BCSDIR     /ford1/share/gmao_SIteam/ModelData/bcs/${LSM_BCS}/${LSM_BCS}_${OCEAN_TAG}  # location of Boundary Conditions
+              setenv REPLAY_ANA_EXPID    REPLAY_UNSUPPORTED                                                # Default Analysis Experiment for REPLAY
+              setenv REPLAY_ANA_LOCATION REPLAY_UNSUPPORTED                                                # Default Analysis Location   for REPLAY
+              setenv M2_REPLAY_ANA_LOCATION REPLAY_UNSUPPORTED                                             # Default Analysis Location   for M2 REPLAY
+
+              setenv SSTDIR     /ford1/share/gmao_SIteam/ModelData/@SSTNAME/${OGCM_IM}x${OGCM_JM}  # location of SST Boundary Conditions
+              setenv CHMDIR     /ford1/share/gmao_SIteam/ModelData/fvInput_nc3         # locations of Aerosol Chemistry BCs
+              setenv WRKDIR     /home/$LOGNAME                                         # user work directory
+              setenv COUPLEDIR  /ford1/share/gmao_SIteam/ModelData/Forcings            # Coupled Ocean/Atmos Forcing
+
               setenv CPEXEC     /bin/cp                                                # Copy utility for large copies
               setenv TAREXEC    tar                                                    # Tar utility for large archives
+              # By default on AWS, just ignore IOSERVER for now until testing
+              set USE_IOSERVER = 0
+              set IOS_NDS = 0
+              set NCPUS_PER_NODE = 0
 else
 # These are defaults for the desktop
-              setenv BATCH_GROUP "SBATCH -A "                                          # PBS Syntax for GROUP
-              setenv     RUN_FT "06:00:00"                                             # Wallclock Time   - UNUSED
+              setenv BATCH_CMD "sbatch"                                                # SLURM Batch command
+              setenv BATCH_GROUP "SBATCH --account="                                    # SLURM Syntax for account name
+              setenv BATCH_TIME "SBATCH --time="                                       # SLURM Syntax for walltime
+              setenv BATCH_JOBNAME "SBATCH --job-name="                                # SLURM Syntax for job name
+              setenv BATCH_OUTPUTNAME "SBATCH --output="                               # SLURM Syntax for job output name
+              setenv BATCH_JOINOUTERR "DELETE"                                         # SLURM joins out and err by default
+              setenv     RUN_FT "06:00:00"                                             # Wallclock Time   for ctm_forecast.j
               setenv     RUN_T  "12:00:00"                                             # Wallclock Time   for ctm_run.j
               setenv    POST_T  "8:00:00"                                              # Wallclock Time   for ctm_post.j
               setenv    PLOT_T  "12:00:00"                                             # Wallclock Time   for ctm_plot.j
               setenv ARCHIVE_T  "1:00:00"                                              # Wallclock Time   for ctm_archive.j
               setenv  RUN_Q     NULL                                                   # batch queue name for ctm_run.j
               setenv  RUN_P     NULL                                                   # PE Configuration for ctm_run.j
-              setenv  RUN_FP    NULL                                                   # PE Configuration - UNUSED
+              setenv  RUN_FP    NULL                                                   # PE Configuration for ctm_forecast.j
               setenv    POST_Q  NULL                                                   # batch queue name for ctm_post.j
               setenv    PLOT_Q  NULL                                                   # batch queue name for ctm_plot.j
               setenv    MOVE_Q  NULL                                                   # batch queue name for ctm_moveplot.j
@@ -835,22 +1161,27 @@ else
               setenv    PLOT_P  NULL                                                   # PE Configuration for ctm_post.j
               setenv ARCHIVE_P  NULL                                                   # PE Configuration for ctm_archive.j
               setenv CONVERT_P  NULL                                                   # PE Configuration for ctm_convert.j
-              setenv BCSDIR     /ford1/share/gmao_SIteam/ModelData/bcs/Icarus/$BCSTAG  # location of Boundary Conditions
+              setenv    MOVE_P  NULL                                                   # PE Configuration for ctm_moveplot.j
+
+              setenv BCSDIR     /ford1/share/gmao_SIteam/ModelData/bcs/${LSM_BCS}/${LSM_BCS}_${OCEAN_TAG}  # location of Boundary Conditions
+              setenv REPLAY_ANA_EXPID    REPLAY_UNSUPPORTED                                                # Default Analysis Experiment for REPLAY
+              setenv REPLAY_ANA_LOCATION REPLAY_UNSUPPORTED                                                # Default Analysis Location   for REPLAY
+              setenv M2_REPLAY_ANA_LOCATION REPLAY_UNSUPPORTED                                             # Default Analysis Location   for M2 REPLAY
+
+              setenv SSTDIR     /ford1/share/gmao_SIteam/ModelData/@SSTNAME/${OGCM_IM}x${OGCM_JM}  # location of SST Boundary Conditions
               setenv CHMDIR     /ford1/share/gmao_SIteam/ModelData/fvInput_nc3         # locations of Aerosol Chemistry BCs
               setenv WRKDIR     /home/$LOGNAME                                         # user work directory
-              setenv COUPLEDIR  /ford1/share/gmao_SIteam/ModelData/Forcings            # Coupled Ocean/Atmos Forcing - UNUSED
-              if( $CUBED == "TRUE" ) then
+              setenv COUPLEDIR  /ford1/share/gmao_SIteam/ModelData/Forcings            # Coupled Ocean/Atmos Forcing
                  set NX = 1
                  set NY = 6
-              else
-                 set NX = 2
-                 set NY = 4
-              endif
               set CNV_NX = ${NX}
               set CNV_NY = ${NY}
-              setenv RUN_CMD 'mpirun -oversubscribe -np '                              # mpi run for DESKTOP (assumes OpenMPI)
               setenv CPEXEC     /bin/cp                                                # Copy utility for large copies
               setenv TAREXEC    tar                                                    # Tar utility for large archives
+              # By default on desktop, just ignore IOSERVER for now
+              set USE_IOSERVER = 0
+              set IOS_NDS = 0
+              set NCPUS_PER_NODE = 0
 endif
 
 
@@ -868,20 +1199,20 @@ while( $check == FALSE )
           echo $HISTORYrc > $HOME/.HISTORYrc
   endif
 
-  echo "Enter the tag or directory (/filename) of the ${C1}HISTORY.GEOSCTM.rc.tmpl${CN} to use"
+  echo "Enter the directory (/filename) of the ${C1}HISTORY.GEOSCTM.rc.tmpl${CN} to use"
   echo "(To use ${C1}HISTORY.GEOSCTM.rc.tmpl${CN} from current build, Type:  ${C2}Current${CN}         )"
   echo "-------------------------------------------------------------------------"
-  echo "Hit ENTER to use Default Tag/Location: (${C2}${HISTORYrc}${CN})"
+  echo "Hit ENTER to use Default Location: (${C2}${HISTORYrc}${CN})"
   set   NUHISTORY  = $<
   if( .$NUHISTORY != . ) set HISTORYrc = $NUHISTORY
-  if( -e $BINDIR/HISTORY.rc.hold ) /bin/mv -f $BINDIR/HISTORY.rc.hold $BINDIR/HISTORY.rc.tmpl
-  if( -e $BINDIR/HISTORY.rc.tmpl ) /bin/mv -f $BINDIR/HISTORY.rc.tmpl $BINDIR/HISTORY.rc.hold
+
+  set TMPHIST = `mktemp`
 
   if( "$HISTORYrc" == "Current" ) then
             set check = TRUE
             if( -e $HOME/.HISTORYrc ) /bin/rm $HOME/.HISTORYrc
             echo $HISTORYrc >                 $HOME/.HISTORYrc
-            /bin/cp -f $ETCDIR/HISTORY.GEOSCTM.rc.tmpl $BINDIR/HISTORY.rc.tmpl
+            /bin/cp -f $ETCDIR/HISTORY.GEOSCTM.rc.tmpl $TMPHIST
   endif
 
   if( "$HISTORYrc" != "Current" ) then
@@ -889,29 +1220,30 @@ while( $check == FALSE )
             set check = TRUE
             if( -e $HOME/.HISTORYrc ) /bin/rm $HOME/.HISTORYrc
             echo $HISTORYrc >                 $HOME/.HISTORYrc
-            /bin/cp -f $ETCDIR/$HISTORYrc $BINDIR/HISTORY.rc.tmp1
+            set TMPHIST1 = `mktemp`
+            /bin/cp -f $ETCDIR/$HISTORYrc $TMPHIST1
 
-            set  EXPID_old = `grep  "EXPID:" $BINDIR/HISTORY.rc.tmp1 | cut -d: -f2`
-            set EXPDSC_old = `grep "EXPDSC:" $BINDIR/HISTORY.rc.tmp1 | cut -d: -f2`
+            set  EXPID_old = `grep  "EXPID:" $TMPHIST1 | cut -d: -f2`
+            set EXPDSC_old = `grep "EXPDSC:" $TMPHIST1 | cut -d: -f2`
 
-            /bin/rm -f command
+            set  TMPCMD = `mktemp`
             set  string = "EXPID:"
-            echo cat $BINDIR/HISTORY.rc.tmp1 \| awk \'\{if \( \$1 \~ \"${string}\" \) \
-                 \{sub \( \"${EXPID_old}\" , \"${EXPID}\"  \)\;print\} else print\}\' \> $BINDIR/HISTORY.rc.tmpl > command
-            chmod +x   command
-                     ./command
-            /bin/rm -f command
-            /bin/mv -f $BINDIR/HISTORY.rc.tmpl $BINDIR/HISTORY.rc.tmp1
-                   cat $BINDIR/HISTORY.rc.tmp1 | sed -e "s|${EXPDSC_old}|${EXPDSC}|g" > $BINDIR/HISTORY.rc.tmpl
-            /bin/rm -f $BINDIR/HISTORY.rc.tmp1
+            echo cat $TMPHIST1 \| awk \'\{if \( \$1 \~ \"${string}\" \) \
+                 \{sub \( \"${EXPID_old}\" , \"${EXPID}\"  \)\;print\} else print\}\' \> $TMPHIST > $TMPCMD
+            chmod +x   $TMPCMD
+                       $TMPCMD
+            /bin/rm -f $TMPCMD
+            /bin/mv -f $TMPHIST $TMPHIST1
+                   cat $TMPHIST1 | sed -e "s|${EXPDSC_old}|${EXPDSC}|g" > $TMPHIST
+            /bin/rm -f $TMPHIST1
 
        else if( -e $HISTORYrc/HISTORY.GEOSCTM.rc.tmpl ) then
             set check = TRUE
             if( -e $HOME/.HISTORYrc ) /bin/rm $HOME/.HISTORYrc
             echo $HISTORYrc >                 $HOME/.HISTORYrc
-            /bin/cp -f $HISTORYrc/HISTORY.GEOSCTM.rc.tmpl $BINDIR/HISTORY.rc.tmpl
+            /bin/cp -f $HISTORYrc/HISTORY.GEOSCTM.rc.tmpl $TMPHIST
        else
-            echo "This condition is based on updating HISTORY.AGCM.rc.tmpl with CVS"
+            echo "This condition is based on updating HISTORY.GEOSCTM.rc.tmpl with CVS"
             echo "This has no equivalent in git at present. Please contact Matt"
             echo "Thompson or Larry Takacs to help resolve this."
             exit 2
@@ -1039,7 +1371,8 @@ setenv CNVDIR $EXPDIR/convert
 #######################################################################
 
 # GEOSctm Build Directory
-# ------------------------
+# -----------------------
+
   echo "Enter Location for ${C1}Build${CN} directory containing:  bin/ etc/ include/ etc..."
   echo "Hit ENTER to use Default Location:"
   echo "----------------------------------"
@@ -1050,8 +1383,9 @@ setenv CNVDIR $EXPDIR/convert
   if( .$NUGEOSDIR != . ) then
        set GEOSDIR = $NUGEOSDIR
   endif
-  
+
     set check =  FALSE
+
 GEOSDIR:
 while( $check == FALSE )
 
@@ -1081,9 +1415,13 @@ while( $check == FALSE )
   endif
 end
 
+#
+# GEOSBIN does point to the bin/ directory in each
+#
 setenv GEOSSRC  ${GEOSDIR}
 setenv GEOSBIN  ${GEOSDIR}/bin
 setenv GEOSETC  ${GEOSDIR}/etc
+
 setenv GEOSUTIL ${GEOSSRC}
 setenv CTMVER   `cat ${GEOSETC}/.GEOSCTM_VERSION`
 
@@ -1125,15 +1463,26 @@ echo $GROUP > $HOME/.GROUProot
     set EMISSIONS = g5chem
   endif
 
+if ( $LINKX == "TRUE" ) then
+  if ( -e $GEOSBIN/GEOSctm.x ) ln -s $GEOSBIN/GEOSctm.x $EXPDIR
+else
   if ( -e $GEOSBIN/GEOSctm.x ) rsync -avx $GEOSBIN/GEOSctm.x $EXPDIR
+endif
 
 #######################################################################
-#                      Create SETENV Commands
+#               Set Recommended MPI Stack Settings
 #######################################################################
+
+# By default do not write restarts by oserver
+set RESTART_BY_OSERVER = NO
 
 /bin/rm -f $HOMDIR/SETENV.commands
 
 if( $MPI == openmpi ) then
+
+# Open MPI and GEOS has issues with restart writing. Having the
+# oserver write them can be orders of magnitude faster
+set RESTART_BY_OSERVER = YES
 
 # This turns off an annoying warning when running
 # Open MPI on a system where TMPDIRs are on a networked
@@ -1178,7 +1527,7 @@ cat > $HOMDIR/SETENV.commands << EOF
 
    setenv MPI_COLL_REPRODUCIBLE
    setenv SLURM_DISTRIBUTION block
-   
+
    #setenv MPI_DISPLAY_SETTINGS 1
    #setenv MPI_VERBOSE 1
    
@@ -1191,13 +1540,39 @@ cat > $HOMDIR/SETENV.commands << EOF
    # with binarytile.x and other executables.
    unsetenv PMI_RANK
 
+   # Often when debugging on MPT, the traceback from Intel Fortran
+   # is "absorbed" and only MPT's errors are displayed. To allow the
+   # compiler's traceback to be displayed, uncomment this environment
+   # variable
+   #setenv FOR_IGNORE_EXCEPTIONS false
+
 EOF
 
 else if( $MPI == intelmpi ) then
 
 cat > $HOMDIR/SETENV.commands << EOF
 setenv I_MPI_DAPL_UD enable
+setenv I_MPI_ADJUST_ALLREDUCE 12
+setenv I_MPI_ADJUST_GATHERV 3
+
+# This flag prints out the Intel MPI state. Uncomment if needed
+#setenv I_MPI_DEBUG 9
 EOF
+
+# These are options determined to be useful at NCCS
+# Not setting generally as they are more fabric/cluster
+# specific compared to the above adjustments
+if ( $SITE == 'NCCS' ) then
+
+cat >> $HOMDIR/SETENV.commands << EOF
+setenv I_MPI_SHM_HEAP_VSIZE 512
+setenv PSM2_MEMORY large
+setenv I_MPI_EXTRA_FILESYSTEM 1
+setenv I_MPI_EXTRA_FILESYSTEM_FORCE gpfs
+setenv ROMIO_FSTYPE_FORCE "gpfs:"
+EOF
+
+endif # if NCCS
 
 endif # if mpi
 
@@ -1315,6 +1690,7 @@ s?@PLOT_T?$PLOT_T?g
 s?@PLOT_P?$PLOT_P?g
 s?@PLOT_Q?$PLOT_Q?g
 s?@MOVE_Q?$MOVE_Q?g
+s?@MOVE_P?$MOVE_P?g
 s?@ARCHIVE_N?$ARCHIVE_N?g
 s?@ARCHIVE_T?$ARCHIVE_T?g
 s?@ARCHIVE_P?$ARCHIVE_P?g
@@ -1332,6 +1708,11 @@ s?@EXPDSC?$EXPDSC?g
 s?@HOMDIR?$HOMDIR?g
 s?@CNVDIR?$CNVDIR?g
 s?@BATCH_GROUP?${BATCH_GROUP}${GROUP}?g
+s?@BATCH_TIME?$BATCH_TIME?g
+s?@BATCH_CMD?$BATCH_CMD?g
+s?@BATCH_JOBNAME?$BATCH_JOBNAME?g
+s?@BATCH_OUTPUTNAME?$BATCH_OUTPUTNAME?g
+s?@BATCH_JOINOUTERR?$BATCH_JOINOUTERR?g
 s?@SITE?$SITE?g
 s?@GEOSDIR?$GEOSDIR?g
 s?@GEOSSRC?$GEOSSRC?g
@@ -1346,7 +1727,7 @@ s?@OBSERVER_FRQ?0?g
 s?RECORD_?#RECORD_?g
 
 s?>>>FORCEDAS<<<?$FORCEDAS?g
-s?>>>FORCEGCM<<<?$FORCEGCM?g
+s?>>>FORCECTM<<<?$FORCECTM?g
 s?>>>PCHEM<<<?$PCHEM?g
 s?>>>GOCART<<<?$GOCART?g
 s?>>>GMICHEM<<<?$GMICHEM?g
@@ -1395,6 +1776,10 @@ s/@CHEM_DT/$CHEM_DT/g
 s/@NX/$NX/g
 s/@NY/$NY/g
 s/@USE_SHMEM/$USE_SHMEM/g
+s/@USE_IOSERVER/$USE_IOSERVER/g
+s/@IOS_NDS/$IOS_NDS/g
+s/@RESTART_BY_OSERVER/$RESTART_BY_OSERVER/g
+s/@NCPUS_PER_NODE/$NCPUS_PER_NODE/g
 s/@NUM_READERS/$NUM_READERS/g
 s/@NUM_WRITERS/$NUM_WRITERS/g
 s/@GEOSCTM_IM/$GEOSCTM_IM/g
@@ -1443,6 +1828,7 @@ set FILES = "ctm_run.j          \
              CAP.rc.tmpl        \
              GEOSCTM.rc.tmpl       \
              HISTORY.rc.tmpl    \
+             logging.yaml       \
              CTM_GridComp.rc.tmpl \
              pTracers_GridComp.rc.tmpl \
              FP_ExtData.rc.tmpl \
@@ -1459,14 +1845,16 @@ endif
 
 echo " "
 
-# Operate on files in BINDIR
+# Operate on files in ETCDIR
 
 foreach FILE ($FILES)
 
    /bin/rm -f $HOMDIR/tmpfile
    /bin/rm -f $HOMDIR/$FILE
 
-   if (      -e $BINDIR/$FILE ) then
+   if ( $FILE == "HISTORY.rc.tmpl" ) then
+      cat            $TMPHIST > $HOMDIR/tmpfile
+   else if ( -e $BINDIR/$FILE ) then
       cat       $BINDIR/$FILE > $HOMDIR/tmpfile
    else if ( -e $ETCDIR/$FILE ) then
       cat       $ETCDIR/$FILE > $HOMDIR/tmpfile
@@ -1490,11 +1878,7 @@ if ($GPU == "TRUE") then
 /bin/rm -f $HOMDIR/GPUEND.commands
 endif
 
-if(     -e $BINDIR/HISTORY.rc.hold ) then
-/bin/mv -f $BINDIR/HISTORY.rc.hold $BINDIR/HISTORY.rc.tmpl
-else
-/bin/rm -f $BINDIR/HISTORY.rc.tmpl
-endif
+/bin/rm -f $TMPHIST
 
 echo $HOMDIR > $EXPDIR/.HOMDIR
 echo " "
@@ -1520,7 +1904,6 @@ endif
 set RSNAMES = "LH2O LMAM LCARMA LGMICHEM LGEOSCHEMCHEM LSTRATCHEM LGOCART"
 set RSTYPES = "INTERNAL IMPORT"
 
-/bin/rm -f command
 set FILE = GEOSCTM.rc.tmpl
 
 if( -e $HOMDIR/$FILE ) set LOCDIR = $HOMDIR
@@ -1531,26 +1914,28 @@ foreach rsname ($RSNAMES)
    set  test = `eval echo \$$rsname`
    if( $test == FALSE ) then
        foreach type ($RSTYPES)
+          set  TMPCMD = `mktemp`
           set  string = ${name}_${type}
           /bin/rm -f $LOCDIR/$FILE.tmp
           /bin/mv -f $LOCDIR/$FILE $LOCDIR/$FILE.tmp
           echo cat   $LOCDIR/$FILE.tmp \| awk \'\{if \( \$1 \~ \"${string}\" \) \
-               \{sub \( \/${string}\/ ,\"\#${string}\"  \)\;print\} else print\}\' \> $LOCDIR/$FILE > command
-          chmod +x   command
-          ./command
-          /bin/rm -f command
+               \{sub \( \/${string}\/ ,\"\#${string}\"  \)\;print\} else print\}\' \> $LOCDIR/$FILE > $TMPCMD
+          chmod +x   $TMPCMD
+                     $TMPCMD
+          /bin/rm -f $TMPCMD
        end
    endif
 end
 if( $LGOCART == TRUE ) then
+          set  TMPCMD = `mktemp`
           /bin/rm -f $LOCDIR/$FILE.tmp
           /bin/mv -f $LOCDIR/$FILE $LOCDIR/$FILE.tmp
           set  string = AEROCLIM
           echo cat $LOCDIR/$FILE.tmp \| awk \'\{if \( \$1 \~ \"${string}\" \) \
-               \{sub \( \/${string}\/ ,\"\#${string}\"  \)\;print\} else print\}\' \> $LOCDIR/$FILE > command
-          chmod +x   command
-          ./command
-          /bin/rm -f command
+               \{sub \( \/${string}\/ ,\"\#${string}\"  \)\;print\} else print\}\' \> $LOCDIR/$FILE > $TMPCMD
+          chmod +x   $TMPCMD
+                     $TMPCMD
+          /bin/rm -f $TMPCMD
 endif
 /bin/rm -f $LOCDIR/$FILE.tmp
 
@@ -1993,7 +2378,7 @@ echo " "
 echo "Build Directory: ${C2}${GEOSDIR}${CN}"
 echo "----------------"
 echo " "
-if ( ! -e $GEOSDIR/$ARCH/bin/GEOSctm.x ) then
+if ( ! -e $GEOSBIN/GEOSctm.x ) then
      echo " "
      echo "Note:  Build directory does not contain ${C1}GEOSctm.x${CN} !"
      echo "       You will need to put a copy of ${C1}GEOSctm.x${CN} in your Experiment directory"
@@ -2003,7 +2388,7 @@ else
      echo " "
      echo "The following executable has been placed in your Experiment Directory:"
      echo "----------------------------------------------------------------------"
-     echo "${C2}$GEOSDIR/$ARCH/bin/GEOSctm.x${CN}"
+     echo "${C2}$GEOSBIN/GEOSctm.x${CN}"
      echo " "
 endif
 echo " "
@@ -2268,38 +2653,33 @@ if ( ! -e $HOME/.HOMDIRroot || ! -e $HOME/.EXPDIRroot ) then
       echo "Please run ctm_setup in non-clone mode at least once to use this script."
       exit 1
    endif
-else
-   # MAT There are two thoughts here. You can either place the clone
-   # in the .HOMDIRroot/.EXPDIRroot, but that is only nice if you have
-   # one place, you put all your experiments. What if you have lots of
-   # directories? Instead, let us default to the directory root of the
-   # cloned experiment.
-
-   #set HOMDIRroot=`cat $HOME/.HOMDIRroot`
-   set HOMDIRroot=`dirname $OLDHOMDIR`
-   #echo "Setting HOMDIR to $HOMDIRroot"
-   #set EXPDIRroot=`cat $HOME/.EXPDIRroot`
-   set EXPDIRroot=`dirname $OLDEXPDIR`
-   #echo "Setting EXPDIR to $EXPDIRroot"
 endif
+
+# MAT There are two thoughts here. You can either place the clone in
+# the .HOMDIRroot/.EXPDIRroot, but that is only nice if you have one
+# single place you put all your experiments. What if you have lots of
+# directories? Instead, let us default to the directory root of the
+# cloned experiment if the cloned experiment is yours. If it isn't your
+# experiment you are cloning, then default to the values in the dotfile
+
+if ( $OLDUSER == $LOGNAME) then
+   set HOMDIRroot=`dirname $OLDHOMDIR`
+   set EXPDIRroot=`dirname $OLDEXPDIR`
+else
+   set HOMDIRroot=`cat $HOME/.HOMDIRroot`
+   set EXPDIRroot=`cat $HOME/.EXPDIRroot`
+endif
+
+echo "Setting HOMDIR to $HOMDIRroot"
+echo "Setting EXPDIR to $EXPDIRroot"
 
 if ( -e $HOME/.GROUProot ) then
    set GROUProot=`cat $HOME/.GROUProot`
-   #echo "Using account $GROUProot"
+   echo "Using account $GROUProot"
 else
    echo "$HOME/.GROUProot not found."
    set GROUProot=`groups | awk '{print $1}'`
    echo "Based off of groups, setting account to $GROUProot"
-endif
-
-# -----------------------------------
-# Find out if we are running the cube 
-# -----------------------------------
-
-if ( -e $CLONEDIR/fvcore_layout.rc ) then
-   set CUBED = TRUE
-else
-   set CUBED = FALSE
 endif
 
 # ------------------------------------------------
@@ -2354,6 +2734,7 @@ HOMDIR/CAP.rc
 HOMDIR/GEOSCTM.rc
 HOMDIR/HISTORY.rc
 HOMDIR/ctm_run.j
+HOMDIR/logging.yaml
 HOMDIR/MAPL_ExtData.rc
 HOMDIR/CTM_GridComp.rc
 HOMDIR/pTracers_GridComp.rc
@@ -2363,11 +2744,9 @@ HOMDIR/FPIT_ExtData.rc.tmpl
 HOMDIR/FP_ExtData.rc.tmpl
 EOF
 
-if($CUBED == "TRUE") then
 cat >> $FILES_TO_PROCESS << EOF
 HOMDIR/fvcore_layout.rc
 EOF
-endif
 
 # ------------------------------------------------
 # Create two sets of files so we can copy from one
@@ -2445,14 +2824,14 @@ end
 # Construct the new job ids
 # -------------------------
 
-    set RUN_N=`echo $NEWEXPID | cut -b1-11`_RUN
-   set RUN_FN=`echo $NEWEXPID | cut -b1-11`_FCST
-   set POST_N=`echo $NEWEXPID | cut -b1-10`_POST
-   set PLOT_N=`echo $NEWEXPID | cut -b1-11`_PLT
-   set MOVE_N=`echo $NEWEXPID | cut -b1-11`_MOVE
-set ARCHIVE_N=`echo $NEWEXPID | cut -b1-10`_ARCH
-set REGRESS_N=`echo $NEWEXPID | cut -b1-10`_RGRS
-set CONVERT_N=`echo $NEWEXPID | cut -b1-11`_CNV
+    set RUN_N=`echo $NEWEXPID | cut -b1-200`_RUN
+   set RUN_FN=`echo $NEWEXPID | cut -b1-200`_FCST
+   set POST_N=`echo $NEWEXPID | cut -b1-199`_POST
+   set PLOT_N=`echo $NEWEXPID | cut -b1-200`_PLT
+   set MOVE_N=`echo $NEWEXPID | cut -b1-200`_MOVE
+set ARCHIVE_N=`echo $NEWEXPID | cut -b1-199`_ARCH
+set REGRESS_N=`echo $NEWEXPID | cut -b1-199`_RGRS
+set CONVERT_N=`echo $NEWEXPID | cut -b1-200`_CNV
 
 sed -i -e "/^#PBS -N/ s#\(PBS -N \)\(.*\)#\1$RUN_N#"     \
        -e "/^#SBATCH --job-name=/ s#\(SBATCH --job-name=\)\(.*\)#\1$RUN_N#"     $NEWHOMDIR/ctm_run.j
@@ -2735,7 +3114,6 @@ ctm_setup, a setup script for the GEOS-5 CTM
    -c --color      Set the colors for $0:t
    -g --gpu        Run the model using the GPUs
    -h --help       Show usage
-      --nocvs      Do not archive the source
 
    If invoked alone, the script runs as normal.
 
