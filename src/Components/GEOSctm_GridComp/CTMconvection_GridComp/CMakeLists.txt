@@ -1,4 +1,4 @@
-esma_set_this ()
+ esma_set_this ()
 
 if (Convection_MODE MATCHES stub)
   set (SRCS
@@ -20,6 +20,6 @@ endif ()
 
 esma_add_library (${this}
   SRCS ${SRCS}
-  DEPENDENCIES GEOSchem_GridComp Chem_Shared MAPL_Base
+  DEPENDENCIES GEOSchem_GridComp Chem_Shared MAPL
   )
   
