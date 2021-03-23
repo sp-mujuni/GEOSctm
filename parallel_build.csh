@@ -20,12 +20,11 @@ setenv ESMADIR $srcdir
 # tcsh script maker
 set origargv = "$argv"
 
-setenv external ""
-setenv USEMEPO FALSE
-while ($#argv)
+setenv DEVELOP FALSE
 
-   if ("$1" == "-mepo") then
-      setenv USEMEPO TRUE
+while ($#argv)
+   if ("$1" == "-develop") then
+      setenv DEVELOP TRUE
    endif
 
    shift
@@ -33,19 +32,23 @@ end
 
 if (! -d ${ESMADIR}/@env) then
    if ($?PBS_JOBID || $?SLURM_JOBID) then
-      echo " checkout_externals must be run!"
+      echo " mepo clone must be run!"
       echo " This requires internet access but you are on a compute node"
       echo " Please run from a head node"
       exit 1
    else
-      if ( "$USEMEPO" == "TRUE") then
          echo "Running mepo initialization"
          mepo init
          mepo clone
-      else
-         echo " Running checkout_externals"
-         checkout_externals $external
+      if ( "$DEVELOP" == "TRUE" ) then
+         echo "Checking out development branches of GEOSgcm_GridComp and GEOSgcm_App"
+         mepo develop GEOSgcm_GridComp GEOSgcm_App
       endif
+      endif
+else
+   if ( "$DEVELOP" == "TRUE" ) then
+      echo "Checking out development branches of GEOSgcm_GridComp and GEOSgcm_App"
+      mepo develop GEOSgcm_GridComp GEOSgcm_App
    endif
 endif
 
