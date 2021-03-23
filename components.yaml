@@ -60,5 +60,5 @@ GOCART:
   local: ./src/Components/GEOSctm_GridComp/@GEOSchem_GridComp/@GOCART
   remote: ../GOCART.git
   sparse: ./config/GOCART.sparse
-  tag: v1.0.0
+  tag: v1.0.1
   develop: develop
