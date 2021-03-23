@@ -236,8 +236,8 @@ echo "Enter the ${C1}Atmospheric Horizontal Resolution${CN} code:"
 echo "--------------------------------------"
 echo "            Cubed-Sphere"
 echo "--------------------------------------"
-echo "   ${C2}c12  --  8   deg ${CN}"
-echo "   ${C2}c24  --  4   deg ${CN}"
+echo "   ${C2}c12   --   8  deg ${CN}"
+echo "   ${C2}c24   --   4  deg ${CN}"
 echo "   ${C2}c48   --   2  deg ${CN}"
 echo "   ${C2}c90   --   1  deg ${CN}"
 echo "   ${C2}c180  -- 1/2  deg (${C1}56-km${C2}) ${CN}"
@@ -455,8 +455,12 @@ else
    set MODEL = 'UNKNOWN'
 endif
 
+#######################################################################
+#                         Check for Ocean
+#######################################################################
 
-set BCSTAG   = Icarus_Reynolds
+# The CTM for now seems to only use Reynolds
+set OCEAN_TAG = Reynolds
 
 # Set DEFAULT SHMEM Parameter
 # ---------------------------
@@ -747,17 +751,74 @@ if( $GEOSCTM_IM == "c3072" ) then
 endif
 
 set IS_FCST = 0
-if($CUBED == "TRUE") then
-    set FVCUBED         = ""
-    set FVLATLON        = "#DELETE"
-    set GEOSCTM_GRIDNAME   = "PE${GEOSCTM_IM}x${GEOSCTM_JM}-CF"
-    set RES_DATELINE    = '${GEOSCTM_IM}x${GEOSCTM_JM}'
-endif
+set FVCUBED         = ""
+set GEOSCTM_GRIDNAME   = "PE${GEOSCTM_IM}x${GEOSCTM_JM}-CF"
+set RES_DATELINE    = '${GEOSCTM_IM}x${GEOSCTM_JM}'
 
 
 set BEG_DATE =  '18910301 000000'
 set END_DATE =  '29990302 210000'
 set JOB_SGMT = "$JOB_SGMT 000000"
+
+
+#######################################################################
+#           Setting for Microphysics & Hydrostatic Mode               #
+#######################################################################
+
+# Settings for fvcore_layout.rc
+set FV_NWAT    = ""
+set FV_ZTRACER = "z_tracer    = .T."
+if ( "$USE_HYDROSTATIC" == "TRUE" ) then
+	set FV_MAKENH     = "Make_NH     = .F."
+	set FV_HYDRO      = "hydrostatic = .T."
+	set FV_SATADJ     = "do_sat_adj  = .F."
+else
+	set FV_MAKENH     = "Make_NH     = .T."
+	set FV_HYDRO      = "hydrostatic = .F."
+	set FV_SATADJ  = "do_sat_adj = .F."
+	set FV_NWAT    = "nwat       =  3 "
+endif
+
+
+#######################################################################
+#           Check for land surface and runoff routing  models         #
+#######################################################################
+
+# NOTE: The CTM uses old-land for now, so hard-coding that in
+
+# Check for Old vs New Land Surface Model Boundary Conditions
+# -----------------------------------------------------------
+#LSM_BCS:
+#echo "Enter the choice of ${C1} Land Surface Boundary Conditions${CN} using: ${C2}1${CN} (Default: Icarus), ${C2}2${CN} (Latest Icarus-NL)"
+#set   LSM_BCS  = $<
+#if( .$LSM_BCS == . ) set LSM_BCS  = 1
+#if(  $LSM_BCS != 1   &  $LSM_BCS != 2 ) then
+     #echo
+     #echo "${C1} Land Surface Boundary Conditions${CN} must be set equal to ${C2}1 (Icarus){CN} or ${C2}2 (Icarus-NL)${CN}!"
+     #goto LSM_BCS
+#else
+     #echo
+#endif
+
+set LSM_BCS = 1
+    if( $LSM_BCS == 1 ) then
+                        set LSM_BCS = "Icarus"
+                        set LSM_PARMS = "#DELETE"
+                        set EMIP_BCS_IN = "Ganymed-4_0"
+                        set EMIP_OLDLAND = ""
+                        set EMIP_NEWLAND = "#DELETE"
+                        set EMIP_MERRA2  = "MERRA2"
+    endif
+    if( $LSM_BCS == 2 ) then
+                        set LSM_BCS = "Icarus-NLv3"
+                        set LSM_PARMS = ""
+                        set EMIP_BCS_IN = "Icarus-NLv3"
+                        set EMIP_OLDLAND = "#DELETE"
+                        set EMIP_NEWLAND = ""
+                        set EMIP_MERRA2  = "MERRA2_NewLand"
+    endif
+
+
 
 #------------------------------------
 # Convert DT (in seconds) into HHMMSS
@@ -1037,11 +1098,6 @@ if( $SITE == 'NAS' ) then
               setenv REPLAY_ANA_LOCATION ONLY_MERRA2_SUPPORTED                                              # Default Analysis Location   for REPLAY
               setenv M2_REPLAY_ANA_LOCATION /nobackup/gmao_SIteam/ModelData/verification/MERRA-2            # Default Analysis Location   for M2 REPLAY
 
-              if( ${OGCM_IM}x${OGCM_JM} == "1440x720" ) then
-                   setenv SSTDIR     /nobackup/gmao_SIteam/ModelData/fvInput/g5gcm/bcs/SST/${OGCM_IM}x${OGCM_JM}  # location of SST Boundary Conditions
-              else
-                   setenv SSTDIR     /nobackup/gmao_SIteam/ModelData/fvInput/g5gcm/bcs/realtime/@SSTNAME/${OGCM_IM}x${OGCM_JM}  # location of SST Boundary Conditions
-              endif
               setenv CHMDIR     /nobackup/gmao_SIteam/ModelData/fvInput_nc3            # locations of Aerosol Chemistry BCs
               setenv WRKDIR     /nobackup/$LOGNAME                                     # user work directory
               setenv COUPLEDIR  /nobackup/gmao_SIteam/ModelData/coupled/Forcings       # Coupled Ocean/Atmos Forcing
@@ -1086,11 +1142,6 @@ else if( $SITE == 'NCCS' ) then
               setenv REPLAY_ANA_LOCATION /discover/nobackup/projects/gmao/g6dev/ltakacs/x0039   # Default Analysis Location   for REPLAY
               setenv M2_REPLAY_ANA_LOCATION /discover/nobackup/projects/gmao/share/gmao_ops/verification/MERRA-2 # Default Analysis Location   for M2 REPLAY
 
-              if( ${OGCM_IM}x${OGCM_JM} == "1440x720" ) then
-                   setenv SSTDIR     $SHARE/dao_ops/fvInput/g5gcm/bcs/SST/${OGCM_IM}x${OGCM_JM} # location of SST Boundary Conditions
-              else
-                   setenv SSTDIR     $SHARE/dao_ops/fvInput/g5gcm/bcs/realtime/@SSTNAME/${OGCM_IM}x${OGCM_JM} # location of SST Boundary Conditions
-              endif
               setenv CHMDIR     $SHARE/dao_ops/fvInput_nc3                             # locations of Aerosol Chemistry BCs
               setenv WRKDIR     /discover/nobackup/$LOGNAME                            # user work directory
               setenv COUPLEDIR  /discover/nobackup/yvikhlia/coupled/Forcings           # Coupled Ocean/Atmos Forcing
@@ -1126,7 +1177,6 @@ else if( $SITE == 'AWS' ) then
               setenv REPLAY_ANA_LOCATION REPLAY_UNSUPPORTED                                                # Default Analysis Location   for REPLAY
               setenv M2_REPLAY_ANA_LOCATION REPLAY_UNSUPPORTED                                             # Default Analysis Location   for M2 REPLAY
 
-              setenv SSTDIR     /ford1/share/gmao_SIteam/ModelData/@SSTNAME/${OGCM_IM}x${OGCM_JM}  # location of SST Boundary Conditions
               setenv CHMDIR     /ford1/share/gmao_SIteam/ModelData/fvInput_nc3         # locations of Aerosol Chemistry BCs
               setenv WRKDIR     /home/$LOGNAME                                         # user work directory
               setenv COUPLEDIR  /ford1/share/gmao_SIteam/ModelData/Forcings            # Coupled Ocean/Atmos Forcing
@@ -1168,7 +1218,6 @@ else
               setenv REPLAY_ANA_LOCATION REPLAY_UNSUPPORTED                                                # Default Analysis Location   for REPLAY
               setenv M2_REPLAY_ANA_LOCATION REPLAY_UNSUPPORTED                                             # Default Analysis Location   for M2 REPLAY
 
-              setenv SSTDIR     /ford1/share/gmao_SIteam/ModelData/@SSTNAME/${OGCM_IM}x${OGCM_JM}  # location of SST Boundary Conditions
               setenv CHMDIR     /ford1/share/gmao_SIteam/ModelData/fvInput_nc3         # locations of Aerosol Chemistry BCs
               setenv WRKDIR     /home/$LOGNAME                                         # user work directory
               setenv COUPLEDIR  /ford1/share/gmao_SIteam/ModelData/Forcings            # Coupled Ocean/Atmos Forcing
@@ -1719,7 +1768,6 @@ s?@GEOSSRC?$GEOSSRC?g
 s?@GEOSBIN?$GEOSBIN?g
 s?@GEOSETC?$GEOSETC?g
 s?@GEOSUTIL?$GEOSUTIL?g
-s?@RUN_CMD?$RUN_CMD?g
 
 s?@CHECKPOINT_TYPE?default?g
 
@@ -1735,7 +1783,6 @@ s?>>>GEOSCHEMCHEM<<<?$GEOSCHEMCHEM?g
 s?>>>passiveTracer<<<?$passiveTracer?g
 s?>>>IdealizedPT<<<?$IdealizedPT?g
 s?>>>FVCUBED<<<?$FVCUBED?g
-s?>>>FVLATLON<<<?$FVLATLON?g
 s?>>>HIST_GOCART<<<?$HIST_GOCART?g
 s?>>>HIST_GMICHEM<<<?$HIST_GMICHEM?g
 s?>>>HIST_GEOSCHEMCHEM<<<?$HIST_GEOSCHEMCHEM?g
@@ -1807,15 +1854,12 @@ EOF
 
 # Added FV3 Specific Parameters
 # -----------------------------
-if($CUBED == "TRUE") then
-
 cat >> $HOMDIR/sedfile << EOF
 
 s^@HYDROSTATIC^$HYDROSTATIC^g
 s/@GRID_FILE/$GRID_FILE/g
 
 EOF
-endif
 
 set FILES = "ctm_run.j          \
              ctm_post.j         \
@@ -1837,11 +1881,9 @@ set FILES = "ctm_run.j          \
              MERRA2_ExtData.rc.tmpl "
 set FILES = `echo $FILES`
 
-if($CUBED == "TRUE") then
 set FILES = "$FILES \
              fvcore_layout.rc"
 set FILES = `echo $FILES`
-endif
 
 echo " "
 
