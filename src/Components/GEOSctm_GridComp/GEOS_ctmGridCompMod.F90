@@ -14,7 +14,7 @@
 !
 ! !USES:
       use ESMF
-      use MAPL_Mod
+      use MAPL
       use Bundle_IncrementMod
 
       use GEOS_ctmEnvGridComp,       only : EctmSetServices  => SetServices

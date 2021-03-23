@@ -13,7 +13,7 @@
 !
 ! !USES:
       use ESMF
-      use MAPL_Mod
+      use MAPL
       !USE Chem_UtilMod
       USE convectiveTransport_mod
       use GmiArrayBundlePointer_mod

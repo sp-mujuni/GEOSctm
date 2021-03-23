@@ -13,8 +13,7 @@
 ! !USES:
       use ESMF
       use m_set_eta,       only: set_eta
-      use MAPL_Mod
-      use MAPL_GenericMod
+      use MAPL
       USE Chem_UtilMod
       
       USE jw, only : tracer_q, tracer_q1_q2, tracer_q3

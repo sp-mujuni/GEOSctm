@@ -13,7 +13,7 @@
 ! !USES:
 !
       USE ESMF
-      USE MAPL_Mod
+      USE MAPL
       USE GmiConvectionMethod_mod             ! GMI     Convection component
       USE GenericConvectionMethod_mod         ! Generic Convection component
       USE m_chars, ONLY : uppercase

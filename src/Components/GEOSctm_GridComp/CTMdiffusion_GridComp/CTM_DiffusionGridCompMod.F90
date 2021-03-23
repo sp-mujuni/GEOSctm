@@ -13,7 +13,7 @@
 ! !USES:
 !
    USE ESMF
-   USE MAPL_Mod
+   USE MAPL
    USE GmiDiffusionMethod_mod                   ! ESMF parent component
    USE m_chars, ONLY : uppercase
 
