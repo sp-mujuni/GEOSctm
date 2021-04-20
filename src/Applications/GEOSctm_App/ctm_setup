@@ -288,16 +288,9 @@ endif
 
 ASKHYDRO:
 
-if( $HRCODE == 'c1440' | \
-	 $HRCODE == 'c768'  | \
-    $HRCODE == 'c1536' | \
-    $HRCODE == 'c3072' ) then
-    set DEFAULT_HYDROSTATIC = FALSE
-else
-	 set DEFAULT_HYDROSTATIC = TRUE
-endif
+set DEFAULT_HYDROSTATIC = @CFG_HYDROSTATIC@
 
-echo "Use ${C1}Hydrostatic Atmosphere${CN}? (Default: ${C2}YES${CN} or ${C2}TRUE${CN} for Grid Resolutions <= C720)"
+echo "Use ${C1}Hydrostatic Atmosphere${CN}? (Default: ${C2}${DEFAULT_HYDROSTATIC}${CN})"
 set   USE_HYDROSTATIC = $<
 
 if( .$USE_HYDROSTATIC == . ) then
@@ -447,8 +440,8 @@ else if ( $SITE == 'NAS' ) then
       set NCPUS_PER_NODE = 40
    else if ($MODEL == 'rom_ait') then
       set NCPUS_PER_NODE = 128
-      set USE_IOSERVER = 0
-      echo "WARNING WARNING: At present there are issues with IOSERVER and Rome. Turning off IOSERVER!"
+      # Romes are on a different aoe
+      set MODEL='rom_ait:aoe=sles15'
    endif
 
 else
@@ -773,10 +766,19 @@ if ( "$USE_HYDROSTATIC" == "TRUE" ) then
 	set FV_HYDRO      = "hydrostatic = .T."
 	set FV_SATADJ     = "do_sat_adj  = .F."
 else
-	set FV_MAKENH     = "Make_NH     = .T."
-	set FV_HYDRO      = "hydrostatic = .F."
-	set FV_SATADJ  = "do_sat_adj = .F."
-	set FV_NWAT    = "nwat       =  3 "
+   # Logic for NH runs based on build type
+   if ( "$DEFAULT_HYDROSTATIC" == "TRUE") then
+      # If you built for hydrostatic, but want an NH run, run make_nh
+      set FV_MAKENH     = "Make_NH     = .T."
+   else
+      # If you built for non-hydrostatic and want an NH run, do not run
+      # NOTE: If you run regrid.pl it will make restarts that should trigger
+      #       make_nh automatically in FV3
+      set FV_MAKENH     = "Make_NH     = .F."
+   endif
+   set FV_HYDRO   = "hydrostatic = .F."
+   set FV_SATADJ  = "do_sat_adj  = .F."
+   set FV_NWAT    = "nwat        =  3 "
 endif
 
 

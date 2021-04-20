@@ -14,7 +14,6 @@ target_include_directories (GEOSctm.x PUBLIC ${INC_ESMF})
 file (GLOB templates CONFIGURE_DEPENDS *.tmpl)
 
 set (programs
-   ctm_setup
    ctm_run.j
    ctm_regress.j
    ctm_post.j
@@ -23,7 +22,6 @@ set (programs
    ctm_quickplot.csh
    ctm_moveplot.j
    )
-
 
 install (
    FILES ${templates}
@@ -39,7 +37,22 @@ install (
    FILES fvcore_layout.rc logging.yaml
    DESTINATION etc
    )
+   
+if(HYDROSTATIC)
+   set(CFG_HYDROSTATIC TRUE)
+else()
+   set(CFG_HYDROSTATIC FALSE)
+endif()
+
+set (setup_scripts
+   ctm_setup
+   )
+
+foreach (file ${setup_scripts})
+   configure_file(${file} ${file} @ONLY)
+   install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/${file} DESTINATION bin)
+endforeach ()
+
 
 configure_file(.GEOSCTM_VERSION .GEOSCTM_VERSION @ONLY)
 install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/.GEOSCTM_VERSION DESTINATION etc)
-
