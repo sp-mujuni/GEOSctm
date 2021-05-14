@@ -77,26 +77,26 @@ if (! -e $ORGDIR) mkdir -p $ORGDIR
 #                   Set Experiment Run Parameters
 #######################################################################
 
-set       NX = `grep  "^ *NX:" $HOMDIR/AGCM.rc | cut -d':' -f2`
-set       NY = `grep  "^ *NY:" $HOMDIR/AGCM.rc | cut -d':' -f2`
-set  AGCM_IM = `grep  AGCM_IM: $HOMDIR/AGCM.rc | cut -d':' -f2`
-set  AGCM_JM = `grep  AGCM_JM: $HOMDIR/AGCM.rc | cut -d':' -f2`
-set  AGCM_LM = `grep  AGCM_LM: $HOMDIR/AGCM.rc | cut -d':' -f2`
-set  OGCM_IM  = `grep      "OGCM\.IM_WORLD:" $HOMDIR/AGCM.rc | cut -d':' -f2`
-set  OGCM_JM  = `grep      "OGCM\.JM_WORLD:" $HOMDIR/AGCM.rc | cut -d':' -f2`
+set          NX = `grep  "^ *NX:" $HOMDIR/GEOSCTM.rc | cut -d':' -f2`
+set          NY = `grep  "^ *NY:" $HOMDIR/GEOSCTM.rc | cut -d':' -f2`
+set  GEOSCTM_IM = `grep  GEOSctm_IM: $HOMDIR/GEOSCTM.rc | cut -d':' -f2`
+set  GEOSCTM_JM = `grep  GEOSctm_JM: $HOMDIR/GEOSCTM.rc | cut -d':' -f2`
+set  GEOSCTM_LM = `grep  GEOSctm_LM: $HOMDIR/GEOSCTM.rc | cut -d':' -f2`
+set     OGCM_IM = `grep      "OGCM\.IM_WORLD:" $HOMDIR/GEOSCTM.rc | cut -d':' -f2`
+set     OGCM_JM = `grep      "OGCM\.JM_WORLD:" $HOMDIR/GEOSCTM.rc | cut -d':' -f2`
 
->>>COUPLED<<<set  OGCM_LM  = `grep "OGCM\.LM:" $HOMDIR/AGCM.rc | cut -d':' -f2`
->>>COUPLED<<<set       NX = `grep  "OGCM\.NX:" $HOMDIR/AGCM.rc | cut -d':' -f2`
->>>COUPLED<<<set       NY = `grep  "OGCM\.NY:" $HOMDIR/AGCM.rc | cut -d':' -f2`
+>>>COUPLED<<<set  OGCM_LM  = `grep "OGCM\.LM:" $HOMDIR/GEOSCTM.rc | cut -d':' -f2`
+>>>COUPLED<<<set       NX = `grep  "OGCM\.NX:" $HOMDIR/GEOSCTM.rc | cut -d':' -f2`
+>>>COUPLED<<<set       NY = `grep  "OGCM\.NY:" $HOMDIR/GEOSCTM.rc | cut -d':' -f2`
 
 # Set ATMOS and OCEAN Horizontal Resolution Tags
 # ----------------------------------------------
-set AGCM_IM_Tag = `echo $AGCM_IM | awk '{printf "%4.4i", $1}'`
-set AGCM_JM_Tag = `echo $AGCM_JM | awk '{printf "%4.4i", $1}'`
+set GEOSCTM_IM_Tag = `echo $GEOSCTM_IM | awk '{printf "%4.4i", $1}'`
+set GEOSCTM_JM_Tag = `echo $GEOSCTM_JM | awk '{printf "%4.4i", $1}'`
 set OGCM_IM_Tag = `echo $OGCM_IM | awk '{printf "%4.4i", $1}'`
 set OGCM_JM_Tag = `echo $OGCM_JM | awk '{printf "%4.4i", $1}'`
 
->>>FVCUBED<<<set ATMOStag = CF${AGCM_IM_Tag}x6C
+>>>FVCUBED<<<set ATMOStag = CF${GEOSCTM_IM_Tag}x6C
 >>>DATAOCEAN<<<set OCEANtag = DE${OGCM_IM_Tag}xPE${OGCM_JM_Tag}
 >>>COUPLED<<<set OCEANtag = TM${OGCM_IM_Tag}xTM${OGCM_JM_Tag}
 
@@ -125,7 +125,7 @@ cat $extdata_files > ExtData.rc
 
 unsetenv FNDDIR
 
-set fv_rst = `cat AGCM.rc | grep "^DYN_INTERNAL_RESTART_FILE"  | cut -d ":" -f2`
+set fv_rst = `cat GEOSCTM.rc | grep "^DYN_INTERNAL_RESTART_FILE"  | cut -d ":" -f2`
 
 if (-e $CNVDIR/$fv_rst ) then
    setenv FNDDIR $CNVDIR
@@ -195,7 +195,7 @@ setenv CHMDIR   @CHMDIR
 >>>COUPLED<<<setenv BCRSLV    @ATMOStag_DE0360xPE0180
 setenv DATELINE DC
 
->>>COUPLED<<<setenv GRIDDIR  @COUPLEDIR/a${AGCM_IM}x${AGCM_JM}_o${OGCM_IM}x${OGCM_JM}
+>>>COUPLED<<<setenv GRIDDIR  @COUPLEDIR/a${GEOSCTM_IM}x${GEOSCTM_JM}_o${OGCM_IM}x${OGCM_JM}
 >>>COUPLED<<<setenv BCTAG `basename $GRIDDIR`
 >>>DATAOCEAN<<<setenv BCTAG `basename $BCSDIR`
 
@@ -225,15 +225,15 @@ cat << _EOF_ > $FILE
 >>>DATAOCEAN<<</bin/ln -sf $BCSDIR/$BCRSLV/${BCRSLV}-Pfafstetter.TIL  tile.bin
 >>>DATAOCEAN<<<endif
 
-# DAS or REPLAY Mode (AGCM.rc:  pchem_clim_years = 1-Year Climatology)
+# DAS or REPLAY Mode (GEOSCTM.rc:  pchem_clim_years = 1-Year Climatology)
 # --------------------------------------------------------------------
 #/bin/ln -sf $BCSDIR/Shared/pchem.species.Clim_Prod_Loss.z_721x72.nc4 species.data
 
-# CMIP-5 Ozone Data (AGCM.rc:  pchem_clim_years = 228-Years)
+# CMIP-5 Ozone Data (GEOSCTM.rc:  pchem_clim_years = 228-Years)
 # ----------------------------------------------------------
 #bin/ln -sf $BCSDIR/Shared/pchem.species.CMIP-5.1870-2097.z_91x72.nc4 species.data
 
-# MERRA-2 Ozone Data (AGCM.rc:  pchem_clim_years = 39-Years)
+# MERRA-2 Ozone Data (GEOSCTM.rc:  pchem_clim_years = 39-Years)
 # ----------------------------------------------------------
 /bin/ln -sf $BCSDIR/Shared/pchem.species.CMIP-5.MERRA2OX.197902-201706.z_91x72.nc4 species.data
 
@@ -311,8 +311,8 @@ endif
 #          Get C2L History weights/index file for Cubed-Sphere
 #######################################################################
 
-set C_NPX = `echo $AGCM_IM | awk '{printf "%5.5i", $1}'`
-set C_NPY = `echo $AGCM_JM | awk '{printf "%5.5i", $1}'`
+set C_NPX = `echo $GEOSCTM_IM | awk '{printf "%5.5i", $1}'`
+set C_NPY = `echo $GEOSCTM_JM | awk '{printf "%5.5i", $1}'`
 set H_NPX = `echo @HIST_IM | awk '{printf "%5.5i", $1}'`
 set H_NPY = `echo @HIST_JM | awk '{printf "%5.5i", $1}'`
 
@@ -343,7 +343,7 @@ COLLECTIONS:
 _EOF_
 
 #######################################################################
-#           Use sed to alter AGCM.rc to do the conversion
+#           Use sed to alter GEOSCTM.rc to do the conversion
 #######################################################################
 
 sed -r -i -e "/RESTART_TYPE:/ s/binary|pbinary|pnc4/$fromtype/" \
@@ -351,40 +351,40 @@ sed -r -i -e "/RESTART_TYPE:/ s/binary|pbinary|pnc4/$fromtype/" \
           -e "/^ *NX:/ s/[0-9][0-9]*/@CNV_NX/" \
           -e "/^ *NY:/ s/[0-9][0-9]*/@CNV_NY/" \
           -e "/^ *NUM_READERS:/ s/[0-9][0-9]*/1/" \
-          -e "/AEROCLIM/ d" AGCM.rc
+          -e "/AEROCLIM/ d" GEOSCTM.rc
 
 # Remove any suffixes
 # -------------------
 
 sed -r -i -e "/CHECKPOINT_FILE:/ s/.nc4|.bin//" \
-          -e "/RESTART_FILE:/ s/.nc4|.bin//" AGCM.rc
+          -e "/RESTART_FILE:/ s/.nc4|.bin//" GEOSCTM.rc
 
-sed -r -i -e "/CHECKPOINT_FILE:/ s#(.*FILE:)(\s*)(.*)#\1\2\3$toext#" AGCM.rc
+sed -r -i -e "/CHECKPOINT_FILE:/ s#(.*FILE:)(\s*)(.*)#\1\2\3$toext#" GEOSCTM.rc
 
 if ( $fromext != "_rst" ) then
-  sed -r -i -e "/RESTART_FILE:/ s/rst/rst$fromext/" AGCM.rc
+  sed -r -i -e "/RESTART_FILE:/ s/rst/rst$fromext/" GEOSCTM.rc
 endif
 
-sed -r -i -e "/DYCORE: / a DEFAULT_CHECKPOINT_TYPE: $totype" AGCM.rc
+sed -r -i -e "/DYCORE: / a DEFAULT_CHECKPOINT_TYPE: $totype" GEOSCTM.rc
 
 # Add pluses to files to allow for extra fields (or change - to +)
 # ----------------------------------------------------------------
 #if ( $toformat == "NetCDF4" ) then
   #sed -r -i -e '/RESTART_FILE:\s*-/ s#(.*FILE:)(\s*)(-)(.*)#\1\2+\4#' \
-            #-e '/RESTART_FILE:\s*[a-z]/ s#(.*FILE:)(\s*)(.*)#\1\2+\3#' AGCM.rc
+            #-e '/RESTART_FILE:\s*[a-z]/ s#(.*FILE:)(\s*)(.*)#\1\2+\3#' GEOSCTM.rc
 #endif
 
 #######################################################################
 #           Use sed to restore VEGDYN_INTERNAL_RESTART_TYPE
 #######################################################################
 
-sed -r -i -e "/VEGDYN_INTERNAL_RESTART_TYPE:/ s/$fromtype/binary/" AGCM.rc
+sed -r -i -e "/VEGDYN_INTERNAL_RESTART_TYPE:/ s/$fromtype/binary/" GEOSCTM.rc
 
 # If a plus is added above, we must remove the one on vegdyn
 # ----------------------------------------------------------
 
 #if ( $toformat == "NetCDF4" ) then
-  #sed -r -i -e '/VEGDYN_INTERNAL_RESTART_FILE:/ s#\+vegdyn#vegdyn#' AGCM.rc
+  #sed -r -i -e '/VEGDYN_INTERNAL_RESTART_FILE:/ s#\+vegdyn#vegdyn#' GEOSCTM.rc
 #endif
 
 #######################################################################
@@ -393,11 +393,11 @@ sed -r -i -e "/VEGDYN_INTERNAL_RESTART_TYPE:/ s/$fromtype/binary/" AGCM.rc
 
 @CPEXEC $EXPDIR/GEOSctm.x .
 
-set rst_files      = `cat AGCM.rc | grep "RESTART_FILE"    | grep -v VEGDYN | grep -v "#" | cut -d ":" -f1 | cut -d "_" -f1-2`
-set rst_file_names = `cat AGCM.rc | grep "RESTART_FILE"    | grep -v VEGDYN | grep -v "#" | cut -d ":" -f2`
+set rst_files      = `cat GEOSCTM.rc | grep "RESTART_FILE"    | grep -v VEGDYN | grep -v "#" | cut -d ":" -f1 | cut -d "_" -f1-2`
+set rst_file_names = `cat GEOSCTM.rc | grep "RESTART_FILE"    | grep -v VEGDYN | grep -v "#" | cut -d ":" -f2`
 
-set chk_files      = `cat AGCM.rc | grep "CHECKPOINT_FILE" | grep -v "#" | cut -d ":" -f1 | cut -d "_" -f1-2`
-set chk_file_names = `cat AGCM.rc | grep "CHECKPOINT_FILE" | grep -v "#" | cut -d ":" -f2`
+set chk_files      = `cat GEOSCTM.rc | grep "CHECKPOINT_FILE" | grep -v "#" | cut -d ":" -f1 | cut -d "_" -f1-2`
+set chk_file_names = `cat GEOSCTM.rc | grep "CHECKPOINT_FILE" | grep -v "#" | cut -d ":" -f2`
 
 # Remove possible bootstrap parameters (+/-)
 # ------------------------------------------
@@ -443,8 +443,8 @@ end
 #             Set Experiment Run Parameters that were altered
 #######################################################################
 
-set       NX = `grep "^ *NX:" AGCM.rc | cut -d':' -f2`
-set       NY = `grep "^ *NY:" AGCM.rc | cut -d':' -f2`
+set       NX = `grep "^ *NX:" GEOSCTM.rc | cut -d':' -f2`
+set       NY = `grep "^ *NY:" GEOSCTM.rc | cut -d':' -f2`
 
 # Check for Over-Specification of CPU Resources
 # ---------------------------------------------

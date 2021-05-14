@@ -93,12 +93,12 @@ set    OGCM_JM = `grep    OGCM_JM: $HOMDIR/GEOSCTM.rc | cut -d':' -f2`
 # --------------------------------------------
 
 set USE_IOSERVER   = @USE_IOSERVER
-set AGCM_IOS_NODES = `grep IOSERVER_NODES: $HOMDIR/AGCM.rc | cut -d':' -f2`
+set CTM_IOS_NODES = `grep IOSERVER_NODES: $HOMDIR/GEOSCTM.rc | cut -d':' -f2`
 
 if ($USE_IOSERVER == 0) then
    set IOS_NODES = 0
 else
-   set IOS_NODES = $AGCM_IOS_NODES
+   set IOS_NODES = $CTM_IOS_NODES
 endif
 
 # Check for Over-Specification of CPU Resources
@@ -119,7 +119,7 @@ if ( $NCPUS != NULL ) then
 
       set NCPUS_PER_NODE = @NCPUS_PER_NODE
 
-      @ NODES  = `echo "( ($MODEL_NPES + $NCPUS_PER_NODE) + ($AGCM_IOS_NODES * $NCPUS_PER_NODE) - 1)/$NCPUS_PER_NODE" | bc`
+      @ NODES  = `echo "( ($MODEL_NPES + $NCPUS_PER_NODE) + ($CTM_IOS_NODES * $NCPUS_PER_NODE) - 1)/$NCPUS_PER_NODE" | bc`
       @ NPES   = $NODES * $NCPUS_PER_NODE
 
         if( $NPES > $NCPUS ) then
@@ -131,7 +131,7 @@ if ( $NCPUS != NULL ) then
              echo "Specified NX: $NX"
              echo "Specified NY: $NY"
              echo ""
-             echo "Specified IOSERVER_NODES: $AGCM_IOS_NODES"
+             echo "Specified IOSERVER_NODES: $CTM_IOS_NODES"
              echo "Specified cores per node: $NCPUS_PER_NODE"
              exit
         endif
@@ -204,10 +204,10 @@ set month = `echo $RSTDATE | cut -d_ -f1 | cut -b5-6`
 >>>EMIP_NEWLAND<<<# ------------------------------------------------
 set RSTID = `/bin/ls *catch* | cut -d. -f1`
 set day   = `/bin/ls *catch* | cut -d. -f3 | cut -b 7-8`
-$GEOSBIN/regrid.pl -np -ymd ${year}${month}${day} -hr 21 -grout C${AGCM_IM} -levsout ${AGCM_LM} -outdir . -d . -expid $RSTID -tagin @EMIP_BCS_IN -oceanin e -i -nobkg -lbl -nolcv -tagout @LSMBCS -rs 3 -oceanout @OCEANOUT
+$GEOSBIN/regrid.pl -np -ymd ${year}${month}${day} -hr 21 -grout C${GEOSCTM_IM} -levsout ${GEOSCTM_LM} -outdir . -d . -expid $RSTID -tagin @EMIP_BCS_IN -oceanin e -i -nobkg -lbl -nolcv -tagout @LSMBCS -rs 3 -oceanout @OCEANOUT
 >>>EMIP_OLDLAND<<</bin/rm $RSTID.*.bin
 
-     set IMC = $AGCM_IM
+     set IMC = $GEOSCTM_IM
 if(     $IMC < 10 ) then
      set IMC = 000$IMC
 else if($IMC < 100) then
@@ -216,14 +216,14 @@ else if($IMC < 1000) then
      set IMC = 0$IMC
 endif
 
-set  chk_type = `/usr/bin/file -Lb --mime-type C${AGCM_IM}e_${RSTID}.*catch*`
+set  chk_type = `/usr/bin/file -Lb --mime-type C${GEOSCTM_IM}e_${RSTID}.*catch*`
 if( "$chk_type" =~ "application/octet-stream" ) set ext = bin
 if( "$chk_type" =~ "application/x-hdf"        ) set ext = nc4
 
-$GEOSBIN/stripname C${AGCM_IM}@OCEANOUT_${RSTID}.
+$GEOSBIN/stripname C${GEOSCTM_IM}@OCEANOUT_${RSTID}.
 $GEOSBIN/stripname .${year}${month}${day}_21z.$ext.@LSMBCS_@BCSTAG.@ATMOStag_@OCEANtag
 >>>EMIP_OLDLAND<<</bin/mv gocart_internal_rst gocart_internal_rst.merra2
->>>EMIP_OLDLAND<<<$GEOSBIN/gogo.x -s $RSTID.Chem_Registry.rc.${year}${month}${day}_21z -t $EXPDIR/RC/Chem_Registry.rc -i gocart_internal_rst.merra2 -o gocart_internal_rst -r C${AGCM_IM} -l ${AGCM_LM}
+>>>EMIP_OLDLAND<<<$GEOSBIN/gogo.x -s $RSTID.Chem_Registry.rc.${year}${month}${day}_21z -t $EXPDIR/RC/Chem_Registry.rc -i gocart_internal_rst.merra2 -o gocart_internal_rst -r C${GEOSCTM_IM} -l ${GEOSCTM_LM}
 
 
 # Create CAP.rc and cap_restart

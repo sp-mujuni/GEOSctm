@@ -89,9 +89,9 @@ cat $extdata_files > ExtData.rc
 
 # Define Atmospheric Resolution
 # -----------------------------
-set IM = `grep  AGCM_IM: $HOMDIR/AGCM.rc | cut -d':' -f2`
-set JM = `grep  AGCM_JM: $HOMDIR/AGCM.rc | cut -d':' -f2`
-set LM = `grep  AGCM_LM: $HOMDIR/AGCM.rc | cut -d':' -f2`
+set IM = `grep  GEOSctm_IM: $HOMDIR/GEOSCTM.rc | cut -d':' -f2`
+set JM = `grep  GEOSctm_JM: $HOMDIR/GEOSCTM.rc | cut -d':' -f2`
+set LM = `grep  GEOSctm_LM: $HOMDIR/GEOSCTM.rc | cut -d':' -f2`
 
 @    IM6 = 6 * $IM
 if( $IM6 == $JM ) then
@@ -102,11 +102,11 @@ endif
 
 # Create Restart List
 # -------------------
-set rst_files      = `cat AGCM.rc | grep "RESTART_FILE"    | grep -v VEGDYN | grep -v "#" | cut -d ":" -f1 | cut -d "_" -f1-2`
-set rst_file_names = `cat AGCM.rc | grep "RESTART_FILE"    | grep -v VEGDYN | grep -v "#" | cut -d ":" -f2`
+set rst_files      = `cat GEOSCTM.rc | grep "RESTART_FILE"    | grep -v VEGDYN | grep -v "#" | cut -d ":" -f1 | cut -d "_" -f1-2`
+set rst_file_names = `cat GEOSCTM.rc | grep "RESTART_FILE"    | grep -v VEGDYN | grep -v "#" | cut -d ":" -f2`
 
-set chk_files      = `cat AGCM.rc | grep "CHECKPOINT_FILE" | grep -v "#" | cut -d ":" -f1 | cut -d "_" -f1-2`
-set chk_file_names = `cat AGCM.rc | grep "CHECKPOINT_FILE" | grep -v "#" | cut -d ":" -f2`
+set chk_files      = `cat GEOSCTM.rc | grep "CHECKPOINT_FILE" | grep -v "#" | cut -d ":" -f1 | cut -d "_" -f1-2`
+set chk_file_names = `cat GEOSCTM.rc | grep "CHECKPOINT_FILE" | grep -v "#" | cut -d ":" -f2`
 
 # Remove possible bootstrap parameters (+/-)
 # ------------------------------------------
@@ -204,7 +204,7 @@ set EXEMPT_files = `echo SOLAR_INTERNAL_CHECKPOINT_FILE \
 
 set EXEMPT_chk = ""
 foreach file ( ${EXEMPT_files} )
-    set file = `cat AGCM.rc | grep "$file" | cut -d ":" -f2`
+    set file = `cat GEOSCTM.rc | grep "$file" | cut -d ":" -f2`
     set EXEMPT_chk = `echo ${EXEMPT_chk} $file`
 end
 
@@ -246,14 +246,14 @@ cat $extdata_files > ExtData.rc
 
 # If REPLAY, link necessary forcing files
 # ---------------------------------------
-set  REPLAY_MODE = `grep REPLAY_MODE: AGCM.rc | grep -v '#' | cut -d: -f2`
+set  REPLAY_MODE = `grep REPLAY_MODE: GEOSCTM.rc | grep -v '#' | cut -d: -f2`
 if( $REPLAY_MODE == 'Exact' | $REPLAY_MODE == 'Regular' ) then
 
-     set ANA_EXPID    = `grep REPLAY_ANA_EXPID:    AGCM.rc | grep -v '#'   | cut -d: -f2`
-     set ANA_LOCATION = `grep REPLAY_ANA_LOCATION: AGCM.rc | grep -v '#'   | cut -d: -f2`
+     set ANA_EXPID    = `grep REPLAY_ANA_EXPID:    GEOSCTM.rc | grep -v '#'   | cut -d: -f2`
+     set ANA_LOCATION = `grep REPLAY_ANA_LOCATION: GEOSCTM.rc | grep -v '#'   | cut -d: -f2`
 
-     set REPLAY_FILE        = `grep REPLAY_FILE:   AGCM.rc | grep -v '#'   | cut -d: -f2`
-     set REPLAY_FILE09      = `grep REPLAY_FILE09: AGCM.rc | grep -v '#'   | cut -d: -f2`
+     set REPLAY_FILE        = `grep REPLAY_FILE:   GEOSCTM.rc | grep -v '#'   | cut -d: -f2`
+     set REPLAY_FILE09      = `grep REPLAY_FILE09: GEOSCTM.rc | grep -v '#'   | cut -d: -f2`
      set REPLAY_FILE_TYPE   = `echo $REPLAY_FILE           | cut -d"/" -f1 | grep -v %`
      set REPLAY_FILE09_TYPE = `echo $REPLAY_FILE09         | cut -d"/" -f1 | grep -v %`
 
@@ -275,11 +275,11 @@ endif
 set test_duration = 240000
 
 @CPEXEC     CAP.rc      CAP.rc.orig
-@CPEXEC    AGCM.rc     AGCM.rc.orig
+@CPEXEC    GEOSCTM.rc     GEOSCTM.rc.orig
 @CPEXEC HISTORY.rc0 HISTORY.rc
 
-set           NX0 = `grep "^ *NX:" AGCM.rc.orig | cut -d':' -f2`
-set           NY0 = `grep "^ *NY:" AGCM.rc.orig | cut -d':' -f2`
+set           NX0 = `grep "^ *NX:" GEOSCTM.rc.orig | cut -d':' -f2`
+set           NY0 = `grep "^ *NY:" GEOSCTM.rc.orig | cut -d':' -f2`
 
 @ NPES0 = $NX0 * $NY0
 
@@ -290,8 +290,8 @@ set newstring =  "JOB_SGMT: 00000000 ${test_duration}"
 /bin/mv CAP.rc CAP.tmp
 cat CAP.tmp | sed -e "s?$oldstring?$newstring?g" > CAP.rc
 
-set NX = `grep "^ *NX": AGCM.rc | cut -d':' -f2`
-set NY = `grep "^ *NY": AGCM.rc | cut -d':' -f2`
+set NX = `grep "^ *NX": GEOSCTM.rc | cut -d':' -f2`
+set NY = `grep "^ *NY": GEOSCTM.rc | cut -d':' -f2`
 @ NPES = $NX * $NY
 $RUN_CMD $NPES ./GEOSctm.x
                                                                                                                       
@@ -332,7 +332,7 @@ set test_duration = 180000
 echo $nymd0 $nhms0 > cap_restart
 
 @CPEXEC     CAP.rc.orig  CAP.rc
-@CPEXEC    AGCM.rc.orig AGCM.rc
+@CPEXEC    GEOSCTM.rc.orig GEOSCTM.rc
 @CPEXEC HISTORY.rc0  HISTORY.rc
 
 ./strip CAP.rc
@@ -341,20 +341,20 @@ set newstring =  "JOB_SGMT: 00000000 ${test_duration}"
 /bin/mv CAP.rc CAP.tmp
 cat CAP.tmp | sed -e "s?$oldstring?$newstring?g" > CAP.rc
 
-./strip AGCM.rc
-set oldstring =  `cat AGCM.rc | grep "^ *NX:"`
+./strip GEOSCTM.rc
+set oldstring =  `cat GEOSCTM.rc | grep "^ *NX:"`
 set newstring =  "NX: ${test_NX}"
-/bin/mv AGCM.rc AGCM.tmp
-cat AGCM.tmp | sed -e "s?$oldstring?$newstring?g" > AGCM.rc
-set oldstring =  `cat AGCM.rc | grep "^ *NY:"`
+/bin/mv GEOSCTM.rc GEOSCTM.tmp
+cat GEOSCTM.tmp | sed -e "s?$oldstring?$newstring?g" > GEOSCTM.rc
+set oldstring =  `cat GEOSCTM.rc | grep "^ *NY:"`
 set newstring =  "NY: ${test_NY}"
-/bin/mv AGCM.rc AGCM.tmp
-cat AGCM.tmp | sed -e "s?$oldstring?$newstring?g" > AGCM.rc
+/bin/mv GEOSCTM.rc GEOSCTM.tmp
+cat GEOSCTM.tmp | sed -e "s?$oldstring?$newstring?g" > GEOSCTM.rc
 
 setenv YEAR `cat cap_restart | cut -c1-4`
 ./linkbcs
-set NX = `grep "^ *NX": AGCM.rc | cut -d':' -f2`
-set NY = `grep "^ *NY": AGCM.rc | cut -d':' -f2`
+set NX = `grep "^ *NX": GEOSCTM.rc | cut -d':' -f2`
+set NY = `grep "^ *NY": GEOSCTM.rc | cut -d':' -f2`
 @ NPES = $NX * $NY
 $RUN_CMD $NPES ./GEOSctm.x
 
@@ -410,31 +410,31 @@ set newstring =  "JOB_SGMT: 00000000 ${test_duration}"
 /bin/mv CAP.rc CAP.tmp
 cat CAP.tmp | sed -e "s?$oldstring?$newstring?g" > CAP.rc
 
-./strip AGCM.rc
-set oldstring =  `cat AGCM.rc | grep "^ *NX:"`
+./strip GEOSCTM.rc
+set oldstring =  `cat GEOSCTM.rc | grep "^ *NX:"`
 set newstring =  "NX: ${test_NX}"
-/bin/mv AGCM.rc AGCM.tmp
-cat AGCM.tmp | sed -e "s?$oldstring?$newstring?g" > AGCM.rc
-set oldstring =  `cat AGCM.rc | grep "^ *NY:"`
+/bin/mv GEOSCTM.rc GEOSCTM.tmp
+cat GEOSCTM.tmp | sed -e "s?$oldstring?$newstring?g" > GEOSCTM.rc
+set oldstring =  `cat GEOSCTM.rc | grep "^ *NY:"`
 set newstring =  "NY: ${test_NY}"
-/bin/mv AGCM.rc AGCM.tmp
-cat AGCM.tmp | sed -e "s?$oldstring?$newstring?g" > AGCM.rc
->>>COUPLED<<<set oldstring =  `cat AGCM.rc | grep "^ *OGCM.NX:"`
+/bin/mv GEOSCTM.rc GEOSCTM.tmp
+cat GEOSCTM.tmp | sed -e "s?$oldstring?$newstring?g" > GEOSCTM.rc
+>>>COUPLED<<<set oldstring =  `cat GEOSCTM.rc | grep "^ *OGCM.NX:"`
 >>>COUPLED<<<set newstring =  "OGCM.NX: ${test_NY}"
->>>COUPLED<<</bin/mv AGCM.rc AGCM.tmp
->>>COUPLED<<<cat AGCM.tmp | sed -e "s?$oldstring?$newstring?g" > AGCM.rc
->>>COUPLED<<<set oldstring =  `cat AGCM.rc | grep "^ *OGCM.NY:"`
+>>>COUPLED<<</bin/mv GEOSCTM.rc GEOSCTM.tmp
+>>>COUPLED<<<cat GEOSCTM.tmp | sed -e "s?$oldstring?$newstring?g" > GEOSCTM.rc
+>>>COUPLED<<<set oldstring =  `cat GEOSCTM.rc | grep "^ *OGCM.NY:"`
 >>>COUPLED<<<set newstring =  "OGCM.NY: ${test_NX}"
->>>COUPLED<<</bin/mv AGCM.rc AGCM.tmp
->>>COUPLED<<<cat AGCM.tmp | sed -e "s?$oldstring?$newstring?g" > AGCM.rc
+>>>COUPLED<<</bin/mv GEOSCTM.rc GEOSCTM.tmp
+>>>COUPLED<<<cat GEOSCTM.tmp | sed -e "s?$oldstring?$newstring?g" > GEOSCTM.rc
 
 >>>MOM5<<<sed -r -i -e "/^ *layout/ s#= ([0-9]+),*([0-9]+)#= ${test_NY},${test_NX}#" input.nml
 >>>MOM6<<<sed -r -i -e "/^ *LAYOUT/ s#= ([0-9]+), *([0-9]+)#= ${test_NY}, ${test_NX}#" MOM_input
 
 setenv YEAR `cat cap_restart | cut -c1-4`
 ./linkbcs
-set NX = `grep "^ *NX": AGCM.rc | cut -d':' -f2`
-set NY = `grep "^ *NY": AGCM.rc | cut -d':' -f2`
+set NX = `grep "^ *NX": GEOSCTM.rc | cut -d':' -f2`
+set NY = `grep "^ *NY": GEOSCTM.rc | cut -d':' -f2`
 @ NPES = $NX * $NY
 $RUN_CMD $NPES ./GEOSctm.x
                                                                                                                       
