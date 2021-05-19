@@ -9,7 +9,7 @@
 #@BATCH_JOBNAME@MOVE_N
 #@MOVE_Q
 #@BATCH_GROUP
-#@BATCH_OUTPUTNAMEgcm_moveplot.o
+#@BATCH_OUTPUTNAMEctm_moveplot.o
 
 #######################################################################
 #                  System Environment Variables

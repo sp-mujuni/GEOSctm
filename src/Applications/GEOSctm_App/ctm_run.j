@@ -56,7 +56,7 @@ setenv  EXPDIR  @EXPDIR
 setenv  HOMDIR  @HOMDIR
 
 setenv  RSTDATE @RSTDATE
-setenv  GCMEMIP @GCMEMIP
+setenv  CTMEMIP @CTMEMIP
 
 #######################################################################
 #                 Create Experiment Sub-Directories
@@ -68,7 +68,7 @@ if (! -e $EXPDIR/archive    ) mkdir -p $EXPDIR/archive
 if (! -e $EXPDIR/post       ) mkdir -p $EXPDIR/post
 if (! -e $EXPDIR/plot       ) mkdir -p $EXPDIR/plot
 
-if( $GCMEMIP == TRUE ) then
+if( $CTMEMIP == TRUE ) then
     if (! -e $EXPDIR/restarts/$RSTDATE ) mkdir -p $EXPDIR/restarts/$RSTDATE
     setenv  SCRDIR  $EXPDIR/scratch.$RSTDATE
 else
@@ -161,10 +161,10 @@ else
 endif
 
 #######################################################################
-#                       GCMEMIP Setup
+#                       CTMEMIP Setup
 #######################################################################
 
-if( $GCMEMIP == TRUE & ! -e $EXPDIR/restarts/$RSTDATE/cap_restart ) then
+if( $CTMEMIP == TRUE & ! -e $EXPDIR/restarts/$RSTDATE/cap_restart ) then
 
 cd $EXPDIR/restarts/$RSTDATE
 
@@ -276,7 +276,7 @@ endif
 
                              cat fvcore_layout.rc >> input.nml
 
-if( $GCMEMIP == TRUE ) then
+if( $CTMEMIP == TRUE ) then
     @CPEXEC -f  $EXPDIR/restarts/$RSTDATE/cap_restart .
     @CPEXEC -f  $EXPDIR/restarts/$RSTDATE/CAP.rc .
 endif
@@ -413,7 +413,7 @@ end
 
 # Copy Restarts to Scratch Directory
 # ----------------------------------
-if( $GCMEMIP == TRUE ) then
+if( $CTMEMIP == TRUE ) then
     foreach rst ( $rst_file_names )
       if(-e $EXPDIR/restarts/$RSTDATE/$rst ) @CPEXEC $EXPDIR/restarts/$RSTDATE/$rst . &
     end
@@ -474,7 +474,7 @@ while ( $counter <= ${NUM_SGMT} )
 
 /bin/rm -f  EGRESS
 
-if( $GCMEMIP == TRUE ) then
+if( $CTMEMIP == TRUE ) then
     @CPEXEC -f  $EXPDIR/restarts/$RSTDATE/CAP.rc .
 else
     @CPEXEC -f $HOMDIR/CAP.rc .
@@ -979,7 +979,7 @@ setenv YEAR $yearc
 
 # Run GEOSctm.x
 # -------------
-if( $USE_SHMEM == 1 ) $GEOSBIN/RmShmKeys_sshmpi.csh
+if( $USE_SHMEM == 1 ) $GEOSBIN/RmShmKeys_sshmpi.csh >& /dev/null
 
 if( $USE_IOSERVER == 1) then
    set IOSERVER_OPTIONS = "--npes_model $MODEL_NPES --nodes_output_server $IOS_NODES"
@@ -989,7 +989,7 @@ endif
 
 $RUN_CMD $NPES ./GEOSctm.x $IOSERVER_OPTIONS --logging_config 'logging.yaml'
 
-if( $USE_SHMEM == 1 ) $GEOSBIN/RmShmKeys_sshmpi.csh
+if( $USE_SHMEM == 1 ) $GEOSBIN/RmShmKeys_sshmpi.csh >& /dev/null
 
 set rc =  $status
 
@@ -1108,7 +1108,7 @@ end
 #                              Re-Submit Job
 #######################################################################
 
-if( $GCMEMIP == TRUE ) then
+if( $CTMEMIP == TRUE ) then
      foreach rst ( `/bin/ls -1 *_rst` )
         /bin/rm -f $EXPDIR/restarts/$RSTDATE/$rst
      end
@@ -1133,7 +1133,7 @@ endif
 
 if ( $rc == 0 ) then
       cd  $HOMDIR
-      if( $GCMEMIP == TRUE ) then
+      if( $CTMEMIP == TRUE ) then
           if( $capdate < $enddate ) @BATCH_CMD $HOMDIR/ctm_run.j$RSTDATE
       else
           if( $capdate < $enddate ) @BATCH_CMD $HOMDIR/ctm_run.j
