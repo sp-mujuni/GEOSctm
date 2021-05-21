@@ -12,6 +12,6 @@ endif ()
 
 esma_add_library (${this}
   SRCS ${SRCS}
-  DEPENDENCIES FVdycoreCubed_GridComp GMIchem_GridComp Chem_Shared MAPL_Base GMAO_hermes
+  DEPENDENCIES FVdycoreCubed_GridComp GMIchem_GridComp Chem_Shared MAPL GMAO_hermes
   )
   

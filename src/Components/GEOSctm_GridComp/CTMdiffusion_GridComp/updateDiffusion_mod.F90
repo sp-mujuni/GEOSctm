@@ -13,7 +13,7 @@ module updateDiffusion_mod
 !
 ! !USES:
       use ESMF
-      use MAPL_Mod
+      use MAPL
       use GmiArrayBundlePointer_mod, only : t_GmiArrayBundle
       !use GmiSpcConcentrationMethod_mod, only : isFixedConcentration
 !

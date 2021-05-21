@@ -1,53 +1,76 @@
+GEOSctm:
+  fixture: true
+  develop: main
+
 env:
-   local: ./@env
-   remote: ../ESMA_env.git
-   tag: v2.0.2
-   develop: master
+  local: ./@env
+  remote: ../ESMA_env.git
+  tag: v3.2.1
+  develop: main
 
 cmake:
-   local: ./@cmake
-   remote: ../ESMA_cmake.git
-   tag: v2.1.2
-   develop: develop
+  local: ./@cmake
+  remote: ../ESMA_cmake.git
+  tag: v3.4.2
+  develop: develop
 
 ecbuild:
-   local: ./@cmake/@ecbuild
-   remote: ../ecbuild.git
-   branch: feature/FindMKL-portability-improvement
+  local: ./@cmake/@ecbuild
+  remote: ../ecbuild.git
+  tag: geos/v1.0.6
 
 GMAO_Shared:
-   local: ./src/Shared/@GMAO_Shared
-   remote: ../GMAO_Shared.git
-   tag: v1.1.0
-   sparse: ./config/GMAO_Shared.sparse
-   develop: master
+  local: ./src/Shared/@GMAO_Shared
+  remote: ../GMAO_Shared.git
+  tag: v1.4.1
+  sparse: ./config/GMAO_Shared.sparse
+  develop: main
 
 MAPL:
-   local: ./src/Shared/@MAPL
-   remote: ../MAPL.git
-   tag: v2.0.0
-   develop: develop
+  local: ./src/Shared/@MAPL
+  remote: ../MAPL.git
+  tag: v2.6.7
+  develop: develop
 
 FMS:
-   local: ./src/Shared/@FMS
-   remote: ../FMS.git
-   tag: geos/2019.01.01
-   develop: geos/master
+  local: ./src/Shared/@FMS
+  remote: ../FMS.git
+  tag: geos/2019.01.02+noaff.7
+  develop: geos/release/2019.01
 
 FVdycoreCubed_GridComp:
-   local: ./src/Components/GEOSctm_GridComp/@FVdycoreCubed_GridComp
-   remote: ../FVdycoreCubed_GridComp.git
-   tag: v1.1.0
-   develop: develop
+  local: ./src/Components/GEOSctm_GridComp/@FVdycoreCubed_GridComp
+  remote: ../FVdycoreCubed_GridComp.git
+  tag: v1.2.13
+  develop: develop
 
 fvdycore:
-   local: ./src/Components/GEOSctm_GridComp/@FVdycoreCubed_GridComp/@fvdycore
-   remote: ../GFDL_atmos_cubed_sphere.git
-   tag: geos/v1.1.0
-   develop: geos/develop
+  local: ./src/Components/GEOSctm_GridComp/@FVdycoreCubed_GridComp/@fvdycore
+  remote: ../GFDL_atmos_cubed_sphere.git
+  tag: geos/v1.1.6
+  develop: geos/develop
 
 GEOSchem_GridComp:
-   local: ./src/Components/GEOSctm_GridComp/@GEOSchem_GridComp
-   remote: ../GEOSchem_GridComp.git
-   tag: v1.2.0
-   develop: develop
+  local: ./src/Components/GEOSctm_GridComp/@GEOSchem_GridComp
+  remote: ../GEOSchem_GridComp.git
+  tag: v1.6.0
+  develop: develop
+
+HEMCO:
+  local: ./src/Components/GEOSctm_GridComp/@GEOSchem_GridComp/Shared/HEMCO/@HEMCO
+  remote: ../HEMCO.git
+  tag: geos/v2.2.1
+  develop: geos/develop 
+
+geos-chem:
+  local: ./src/Components/GEOSctm_GridComp/@GEOSchem_GridComp/GEOSCHEMchem_GridComp/@geos-chem
+  remote: ../geos-chem.git
+  tag: geos/v13.0.0-rc1
+  develop: geos/develop
+
+GOCART:
+  local: ./src/Components/GEOSctm_GridComp/@GEOSchem_GridComp/@GOCART
+  remote: ../GOCART.git
+  sparse: ./config/GOCART.sparse
+  tag: v1.0.1
+  develop: develop

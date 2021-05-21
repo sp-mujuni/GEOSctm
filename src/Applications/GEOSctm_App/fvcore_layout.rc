@@ -1,60 +1,72 @@
 &fv_core_nml
-       fv_debug = .F.
-       n_sponge = 9
-       n_zfilter = 25
-       tau = 0.
-       rf_cutoff = 7.5e2
-       d2_bg_k1 = 0.15
-       d2_bg_k2 = 0.02
-       fv_sg_adj = 450
-       remap_option = 0
-       kord_tm =  9
-       kord_mt =  9
-       kord_wz =  9
-       kord_tr =  9
-       hydrostatic = .T.
-       make_nh = .T.
-       beta = 0.
-       a_imp = 1.
-       p_fac = 0.1 
-       k_split = 2
-       n_split = 0 
-       nwat = 1 
-       nord = 2
-       dddmp = 0.1
-       d4_bg = 0.12
-       d2_bg = 0.0
-       d_ext = 0.0
-       vtdm4 = 0.0
-       delt_max = 0.002
-       ke_bg = 0.0
-       do_vort_damp = .F.
-       d_con = 0.
-       hord_mt =  10
-       hord_vt =  10
-       hord_tm =  10
-       hord_dp =  10
-       hord_tr =  8
-       adjust_dry_mass = .F.
-       consv_te = 1. 
-       consv_am = .F.
-       fill = .T.
-       dwind_2d = .F.
-       z_tracer = .F.
- /
-
- &main_nml
+  k_split     = 2
+  @FV_MAKENH
+  @FV_HYDRO
+  @FV_SATADJ
+  @FV_ZTRACER
+  @FV_NWAT
 /
 
-  &test_case_nml
-       test_case = 13
- /
-
- &fms_io_nml
+&main_nml
 /
 
- &fms_nml
-        print_memory_usage=.false.
-        domains_stack_size = 24000000
+&test_case_nml
+  test_case = 13
 /
 
+&fms_io_nml
+/
+
+&fms_nml
+  print_memory_usage=.false.
+  domains_stack_size = 24000000
+/
+
+&gfdl_cloud_microphysics_nml
+  sedi_transport = .true.
+  do_sedi_heat = .false.
+  rad_snow = .true.
+  rad_graupel = .true.
+  rad_rain = .true.
+  const_vi = .F.
+  const_vs = .F.
+  const_vg = .F.
+  const_vr = .F.
+  vi_max = 1.
+  vs_max = 2.
+  vg_max = 12.
+  vr_max = 12.
+  qi_lim = 1.
+  prog_ccn = .false.
+  do_qa = .true.
+  fast_sat_adj = .true.
+  tau_l2v = 1200.
+  tau_v2l = 150.
+  tau_g2v = 900.
+  rthresh = 7.e-6  ! This is a key parameter for cloud water
+  dw_land  = 0.16
+  dw_ocean = 0.10
+  ql_gen = 1.0e-3
+  ql_mlt = 1.0e-3
+  qi0_crt = 8.0E-5
+  qs0_crt = 1.0e-3
+  tau_i2s = 1000.
+  c_psaci = 0.05
+  c_pgacs = 0.01
+  rh_inc = 0.30
+  rh_inr = 0.30
+  rh_ins = 0.30
+  ccn_l = 300.
+  ccn_o = 100.
+  c_paut = 1.0
+  c_cracw = 0.8
+  use_ppm = .false.
+  use_ccn = .true.
+  mono_prof = .true.
+  z_slope_liq  = .true.
+  z_slope_ice  = .true.
+  de_ice = .false.
+  fix_negative = .true.
+  icloud_f = 1
+  mp_time = 150.
+/

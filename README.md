@@ -8,10 +8,9 @@
 
 In your `.bashrc` or `.tcshrc` or other rc file add a line:
 
-##### NCCS (SLES11)
-
+##### NCCS
 ```
-module use -a /discover/swdev/gmao_SIteam/modulefiles-SLES11
+module use -a /discover/swdev/gmao_SIteam/modulefiles-SLES12
 ```
 
 ##### NAS
@@ -33,19 +32,74 @@ Now load the `GEOSenv` module:
 ```
 module load GEOSenv
 ```
-which obtains the latest `git`, `CMake`, and `manage_externals` modules.
+which obtains the latest `git`, `CMake`, and `mepo` modules.
 
 #### Obtain the Model
 
+On GitHub, there are three ways to clone the model: SSH, HTTPS, or GitHub CLI.
+The first two are "git protocols" which determine how `git` communicates with
+GitHub: either through https or ssh. (The latter is a CLI that uses either ssh or
+https protocol underneath.)
+
+For developers of GEOS, the SSH git protocol is recommended as it can avoid some issues if
+[two-factor authentication
+(2FA)](https://docs.github.com/en/github/authenticating-to-github/securing-your-account-with-two-factor-authentication-2fa)
+is enabled on GitHub.
+
+##### SSH
+
+To clone the GEOSctm using the SSH url (starts with `git@github.com`), you run:
 ```
 git clone git@github.com:GEOS-ESM/GEOSctm.git
 ```
+
+###### Permission denied (publickey)
+
+If this is your first time using GitHub with any SSH URL, you might get this
+error:
+```
+Permission denied (publickey).
+fatal: Could not read from remote repository.
+
+Please make sure you have the correct access rights
+and the repository exists.
+```
+
+If you do see this, you need to [upload an ssh
+key](https://docs.github.com/en/github/authenticating-to-github/adding-a-new-ssh-key-to-your-github-account)
+to your GitHub account. This needs to be done on any machine that you want to
+use the SSH URL through.
+
+
+##### HTTPS
+
+To clone the model through HTTPS you run:
+
+```
+git clone https://github.com/GEOS-ESM/GEOSctm.git
+```
+
+Note that if you use the HTTPS URL and have 2FA set up on GitHub, you will need
+to use [personal access
+tokens](https://docs.github.com/en/github/authenticating-to-github/accessing-github-using-two-factor-authentication#authenticating-on-the-command-line-using-https)
+as a password.
+
+##### GitHub CLI
+
+You can also use the [GitHub CLI](https://cli.github.com/) with:
+```
+gh repo clone GEOS-ESM/GEOSctm
+```
+
+Note that when you first use `gh`, it will ask what your preferred git protocol
+is (https or ssh) to use "underneath". The caveats above will apply to whichever
+you choose.
 
 ---
 
 ### Single Step Building of the Model
 
-If all you wish is to build the model, you can run `parallel_build.csh` from a head node. Doing so will checkout all the external repositories of the model and build it. When done, the resulting model build will be found in `build/` and the installation will be found in `install/` with setup scripts like `gcm_setup` and `fvsetup` in `install/bin`.
+If all you wish is to build the model, you can run `parallel_build.csh` from a head node. Doing so will checkout all the external repositories of the model and build it. When done, the resulting model build will be found in `build/` and the installation will be found in `install/` with setup scripts like `ctm_setup` in `install/bin`.
 
 #### Debug Version of GEOS
 
@@ -57,11 +111,20 @@ To obtain a debug version, you can run `parallel_build.csh -debug` which will bu
 
 The steps detailed below are essentially those that `parallel_build.csh` performs for you. Either method should yield identical builds.
 
-##### Checkout externals
+#### Mepo
+
+The GEOS CTM is comprised of a set of sub-repositories. These are
+managed by a tool called [mepo](https://github.com/GEOS-ESM/mepo). To
+clone all the sub-repos, you can run `mepo clone` inside the fixture:
+
 ```
 cd GEOSctm
-checkout_externals
+mepo clone
 ```
+
+The first command initializes the multi-repository and the second one
+clones and assembles all the sub-repositories according to
+`components.yaml`
 
 #### Build the Model
 
@@ -96,6 +159,14 @@ and CMake will install there.
 
 ##### Build and Install with Make
 ```
-make -j6 install
+make -jN install
 ```
+where `N` is the number of parallel processes. On discover head nodes, this should only be as high as 2 due to limits on the head nodes. On a compute node, you can set `N` has high as you like, though 8-12 is about the limit of parallelism in our model's make system.
 
+### Run the CTM
+
+Once the model has built successfully, you will have an `install/` directory in your checkout. To run `ctm_setup` go to the `install/bin/` directory and run it there:
+```
+cd install/bin
+./ctm_setup
+```

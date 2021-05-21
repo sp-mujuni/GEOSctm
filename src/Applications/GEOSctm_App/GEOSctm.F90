@@ -14,7 +14,7 @@
 Program GEOSctm
    
 ! !USES:
-   use MAPL_Mod
+   use MAPL
 
    use GEOS_ctmGridCompMod, only: ROOT_SetServices    => SetServices
    implicit NONE

@@ -8,8 +8,16 @@ set LISTFILE = $2
 #######################################################################
 
 while(   -e $LISTFILE )
+
      if( -e  LOCKFILE ) /bin/echo "Waiting for LOCKFILE ... "
+     if(    -e LOCKFILE ) set LOCK = `stat -c %Z LOCKFILE`
+     while( -e LOCKFILE )
+               set    EPOCH = `date +'%s'`
+               @    LOCKAGE = $EPOCH - $LOCK
+               if( $LOCKAGE > 120 ) /bin/rm -f LOCKFILE
+     end
      lockfile -${JOBID} LOCKFILE
+
      if( -e $LISTFILE ) then
           set PLOT_COMMAND = `head -1 $LISTFILE`
           sed 1,1d -i $LISTFILE
@@ -21,5 +29,6 @@ while(   -e $LISTFILE )
      else
           /bin/rm -f LOCKFILE
      endif
+
 end
 

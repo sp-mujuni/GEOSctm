@@ -13,7 +13,7 @@
 !
 ! !USES:
       use ESMF
-      use MAPL_Mod
+      use MAPL
       USE Chem_UtilMod
       use GmiArrayBundlePointer_mod
       USE GmiESMFrcFileReading_mod
