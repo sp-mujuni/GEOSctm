@@ -21,6 +21,7 @@ Program GEOSctm
 
    character(len=*), parameter :: Iam = 'GEOSctm'
 
+   type (MAPL_Cap) :: cap
    type (MAPL_FlapCLI) :: cli
    type (MAPL_CapOptions) :: cap_options
 
