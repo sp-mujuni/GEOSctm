@@ -977,8 +977,8 @@ python bundleParser.py
 setenv YEAR $yearc
 ./linkbcs
 
-# Set OMP_NUM_THREADS
-# -------------------
+# Establish safe default number of OpenMP threads
+# -----------------------------------------------
 setenv OMP_NUM_THREADS 1
 
 # Run GEOSctm.x

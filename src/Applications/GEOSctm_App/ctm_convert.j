@@ -25,8 +25,8 @@ limit stacksize unlimited
 
 @SETENVS
 
-# Set OMP_NUM_THREADS
-# -------------------
+# Establish safe default number of OpenMP threads
+# -----------------------------------------------
 setenv OMP_NUM_THREADS 1
 
 #######################################################################
