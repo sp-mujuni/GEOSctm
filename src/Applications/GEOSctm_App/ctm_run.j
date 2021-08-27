@@ -203,7 +203,7 @@ set month = `echo $RSTDATE | cut -d_ -f1 | cut -b5-6`
 >>>EMIP_NEWLAND<<<# Regrid Jason-3_4 REPLAY MERRA-2 NewLand Restarts
 >>>EMIP_NEWLAND<<<# ------------------------------------------------
 set RSTID = `/bin/ls *catch* | cut -d. -f1`
-set day   = `/bin/ls *catch* | cut -d. -f3 | cut -b 7-8`
+set day   = `/bin/ls *catch* | cut -d. -f3 | awk 'match($0,/[0-9]{8}/) {print substr($0,RSTART+6,2)}'`
 $GEOSBIN/regrid.pl -np -ymd ${year}${month}${day} -hr 21 -grout C${GEOSCTM_IM} -levsout ${GEOSCTM_LM} -outdir . -d . -expid $RSTID -tagin @EMIP_BCS_IN -oceanin e -i -nobkg -lbl -nolcv -tagout @LSMBCS -rs 3 -oceanout @OCEANOUT
 >>>EMIP_OLDLAND<<</bin/rm $RSTID.*.bin
 
@@ -977,31 +977,37 @@ python bundleParser.py
 setenv YEAR $yearc
 ./linkbcs
 
+# Establish safe default number of OpenMP threads
+# -----------------------------------------------
+setenv OMP_NUM_THREADS 1
+
 # Run GEOSctm.x
 # -------------
 if( $USE_SHMEM == 1 ) $GEOSBIN/RmShmKeys_sshmpi.csh >& /dev/null
 
 if( $USE_IOSERVER == 1) then
    set IOSERVER_OPTIONS = "--npes_model $MODEL_NPES --nodes_output_server $IOS_NODES"
-   set IOSERVER_EXTRA = ""
 
-   # Rome requires some extra bits for IOSERVER as it requires
-   # multigroup server with less PEs per backend node
-   if ( -x /usr/local/bin/nas_info ) then
-      set PROCTYPE=`/usr/local/bin/nas_info --nasmodel`
-      if ( $PROCTYPE == rom ) then
-         # Per Weiyuan Jiang, the ideal number of backend PEs is based on the
-         # number of HISTORY collections and number of IO nodes
+   # Per SI Team, the multigroup server should always be used
+   # The ideal number of backend PEs is based on the number of HISTORY
+   # collections and number of IO nodes
 
          # First we figure out the number of collections in the HISTORY.rc (this is not perfect, but is close to right)
          set NUM_HIST_COLS = `cat HISTORY.rc | sed -n '/^COLLECTIONS:/,/^ *::$/{p;/^ *::$/q}' | grep -v '^ *#' | wc -l`
 
+   # Protect against divide by zero
+   if ($IOS_NODES == 0) then
+      echo "Something is wrong. IOSERVER asked for, but zero IO nodes provided"
+      exit 3
+   endif
+
          # Now we divide that number of collections by the ioserver nodes
          set NUM_BACKEND_PES = `echo "scale=1;(($NUM_HIST_COLS - 1) / $IOS_NODES)" | bc | awk '{print int($1 + 0.5)}'`
 
+   # Finally multigroup requires at least two backend pes
+   if ($NUM_BACKEND_PES < 2) set NUM_BACKEND_PES = 2
+
          set IOSERVER_EXTRA = "--oserver_type multigroup --npes_backend_pernode $NUM_BACKEND_PES"
-      endif
-   endif
 else
    set IOSERVER_OPTIONS = ""
    set IOSERVER_EXTRA = ""
