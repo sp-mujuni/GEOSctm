@@ -3,8 +3,8 @@ esma_set_this ()
 ecbuild_declare_project()
 
 set (alldirs
-  @GEOSchem_GridComp
-  @FVdycoreCubed_GridComp
+  GEOSchem_GridComp
+  FVdycoreCubed_GridComp
   CTMconvection_GridComp
   CTMdiffusion_GridComp
   CTMpTracers_GridComp
