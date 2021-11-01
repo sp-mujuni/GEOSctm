@@ -1669,6 +1669,14 @@ setenv I_MPI_ADJUST_GATHERV 3
 
 # This flag prints out the Intel MPI state. Uncomment if needed
 #setenv I_MPI_DEBUG 9
+
+# This flag controls "...reproducibility of floating-point operations
+# results across different platforms, networks, and topologies in case of
+# the same number of processes." The CTM has some AllReduces that seem to
+# cause non-zero-diff when moving between nodes (e.g., Haswell vs Cascade)
+# Setting this to 2 sets the "strict" mode for Intel MPI, which was
+# shown to provide zero-diff between nodes.
+setenv I_MPI_CBWR 2
 EOF
 
 # These are options determined to be useful at NCCS
