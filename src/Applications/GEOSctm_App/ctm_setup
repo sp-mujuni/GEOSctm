@@ -60,7 +60,7 @@ set GEOSDEF  = `dirname $BINDIR`
 set ETCDIR   = ${GEOSDEF}/etc
 
 # Test if GEOSctm.x is here which means you are in install directory
-if (! -x GEOSctm.x) then
+if (! -x ${BINDIR}/GEOSctm.x) then
    echo "You are trying to run $0 in the Applications/GEOSctm_App directory"
    echo "This is no longer supported. Please run from the bin/ directory"
    echo "in your installation"
@@ -374,24 +374,32 @@ ASKPROC:
 
 if ( $SITE == 'NCCS' ) then
    echo "Enter the ${C1}Processor Type${CN} you wish to run on:"
-   echo "   ${C2}hasw (Haswell)${CN} (default)"
-   if (-e /etc/os-release) then
-      echo "   ${C2}sky  (Skylake)${CN}"
-   endif
+   echo "   ${C2}hasw (Haswell)${CN}"
+   echo "   ${C2}sky  (Skylake)${CN} (default)"
+   echo "   ${C2}cas  (Cascade Lake)${CN}"
    echo " "
    set MODEL = `echo $<`
    set MODEL = `echo $MODEL | tr "[:upper:]" "[:lower:]"`
    if ( .$MODEL == .) then
-      set MODEL = 'hasw'
+      set MODEL = 'sky'
    endif
 
    if( $MODEL != 'hasw' & \
-       $MODEL != 'sky' ) goto ASKPROC
+       $MODEL != 'sky'  & \
+       $MODEL != 'cas' ) goto ASKPROC
 
    if (     $MODEL == 'hasw') then
       set NCPUS_PER_NODE = 28
    else if ($MODEL == 'sky') then
       set NCPUS_PER_NODE = 40
+   else if ($MODEL == 'cas') then
+      # NCCS currently recommends that users do not run with
+      # 48 cores per node on SCU16 due to OS issues and 
+      # recommends that CPU-intensive works run with 46 or less
+      # cores. As 45 is a multiple of 3, it's the best value
+      # that doesn't waste too much
+      #set NCPUS_PER_NODE = 48
+      set NCPUS_PER_NODE = 45
    endif
 
 else if ( $SITE == 'NAS' ) then
@@ -845,7 +853,36 @@ set LSM_BCS = 1
                         set EMIP_MERRA2  = "MERRA2_NewLand"
     endif
 
-
+# Check for Catch-Carbon
+# ----------------------
+if( $LSM_BCS == "Icarus-NLv3" ) then
+    LSM_CHOICE:
+    echo "Enter the choice of ${C1} Land Surface Model${CN} using: ${C2}1${CN} (Default: Catchment), ${C2}2${CN} (CatchmentCN-CLM4.0 (CN_CLM40)), ${C2}3${CN} (CatchmentCN-CLM4.5 (CN_CLM45))"
+    set   LSM_CHOICE = $<
+    if( .$LSM_CHOICE == . ) set LSM_CHOICE  = 1
+    if(  $LSM_CHOICE != 1   &  $LSM_CHOICE != 2 &  $LSM_CHOICE != 3 ) then
+        echo
+        echo "${C1} Catchment Model${CN} must be set equal to ${C2}1{CN} , ${C2}2${CN} or ${C2}3${CN}!"
+        goto LSM_CHOICE
+    else
+        echo
+    endif
+    if( $LSM_CHOICE == 1 ) set HIST_CATCHCN = "#DELETE"
+    if( $LSM_CHOICE == 2 ) set HIST_CATCHCN = ""
+    if( $LSM_CHOICE == 3 ) set HIST_CATCHCN = ""
+    if( $LSM_CHOICE == 1 ) set CTMRUN_CATCHCN = "#DELETE"
+    if( $LSM_CHOICE == 2 ) set CTMRUN_CATCHCN = ""
+    if( $LSM_CHOICE == 3 ) set CTMRUN_CATCHCN = ""
+    if( $LSM_CHOICE == 2 ) then
+      echo "IMPORTANT: please set LAND_PARAMS: to CN_CLM40 in RC/GEOS_SurfaceGridComp.rc in the experiment directory."
+    else if ( $LSM_CHOICE == 3 ) then
+      echo "IMPORTANT: please set LAND_PARAMS: to CN_CLM45 in RC/GEOS_SurfaceGridComp.rc in the experiment directory."
+    endif
+else
+    set LSM_CHOICE = 1
+    set HIST_CATCHCN = "#DELETE"
+    set CTMRUN_CATCHCN = "#DELETE"
+endif
 
 #------------------------------------
 # Convert DT (in seconds) into HHMMSS
@@ -1609,6 +1646,8 @@ cat > $HOMDIR/SETENV.commands << EOF
    setenv MPI_XPMEM_ENABLED yes
    unsetenv SUPPRESS_XPMEM_TRIM_THRESH
 
+   setenv MPI_LAUNCH_TIMEOUT 40
+
    # For some reason, PMI_RANK is randomly set and interferes
    # with binarytile.x and other executables.
    unsetenv PMI_RANK
@@ -1630,6 +1669,14 @@ setenv I_MPI_ADJUST_GATHERV 3
 
 # This flag prints out the Intel MPI state. Uncomment if needed
 #setenv I_MPI_DEBUG 9
+
+# This flag controls "...reproducibility of floating-point operations
+# results across different platforms, networks, and topologies in case of
+# the same number of processes." The CTM has some AllReduces that seem to
+# cause non-zero-diff when moving between nodes (e.g., Haswell vs Cascade)
+# Setting this to 2 sets the "strict" mode for Intel MPI, which was
+# shown to provide zero-diff between nodes.
+setenv I_MPI_CBWR 2
 EOF
 
 # These are options determined to be useful at NCCS
@@ -1818,6 +1865,8 @@ s?>>>HIST_GMICHEM<<<?$HIST_GMICHEM?g
 s?>>>HIST_GEOSCHEMCHEM<<<?$HIST_GEOSCHEMCHEM?g
 s?>>>HIST_passiveTracer<<<?$HIST_passiveTracer?g
 s?>>>HIST_IdealizedPT<<<?$HIST_IdealizedPT?g
+s?>>>HIST_CATCHCN<<<?$HIST_CATCHCN?g
+s?>>>CTMRUN_CATCHCN<<<?$CTMRUN_CATCHCN?g
 s?>>>EMIP_OLDLAND<<<?$EMIP_OLDLAND?g
 s?>>>EMIP_NEWLAND<<<?$EMIP_NEWLAND?g
 s?@LSM_PARMS?$LSM_PARMS?g
@@ -1879,6 +1928,8 @@ s/@RADAR_SATSIM/0/g
 s/@LIDAR_SATSIM/0/g
 s/@MISR_SATSIM/0/g
 s/@SATSIM/0/g
+
+s/@LSM_CHOICE/$LSM_CHOICE/g
 
 s?@CPEXEC?$CPEXEC?g
 s?@TAREXEC?$TAREXEC?g

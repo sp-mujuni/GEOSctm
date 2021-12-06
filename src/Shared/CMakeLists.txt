@@ -1,9 +1,9 @@
 esma_add_subdirectories (
-  @MAPL
-  @GMAO_Shared
+  MAPL
+  GMAO_Shared
   )
 
 # Special case - FMS is built twice with two
 # different precisions.
-add_subdirectory (@FMS fms_r4)
-add_subdirectory (@FMS fms_r8)
+esma_add_subdirectory (FMS RENAME fms_r4)
+esma_add_subdirectory (FMS RENAME fms_r8)

@@ -6,9 +6,7 @@ ecbuild_add_executable (
 
 set (CMAKE_Fortran_FLAGS_RELEASE "${GEOS_Fortran_FLAGS_VECT}")
 
-#link_directories (${MKL_LIBRARIES})
-target_link_libraries (GEOSctm.x ${OpenMP_Fortran_LIBRARIES})
-set_target_properties(GEOSctm.x PROPERTIES LINK_FLAGS "${OpenMP_Fortran_FLAGS}")
+target_link_libraries (GEOSctm.x OpenMP::OpenMP_Fortran)
 target_include_directories (GEOSctm.x PUBLIC ${INC_ESMF})
 
 file (GLOB templates CONFIGURE_DEPENDS *.tmpl)
