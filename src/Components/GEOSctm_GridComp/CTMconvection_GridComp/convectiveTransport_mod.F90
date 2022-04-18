@@ -15,6 +15,7 @@ module convectiveTransport_mod
 
       private 
       public  :: doConvectiveTransport
+      public  :: convectiveTransport
 !
 ! !DESCRIPTION:
 ! Module for the convective transport.

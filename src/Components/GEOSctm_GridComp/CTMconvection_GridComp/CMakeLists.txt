@@ -8,6 +8,8 @@ if (Convection_MODE MATCHES stub)
 else ()
   set (SRCS
     CTM_ConvectionGridCompMod.F90
+    GmiConvectionMethod_mod.F90
+    GenericConvectionMethod_mod.F90
     convectiveTransport_mod.F90
     CTM_rasCalculationsMod.F90
     )
