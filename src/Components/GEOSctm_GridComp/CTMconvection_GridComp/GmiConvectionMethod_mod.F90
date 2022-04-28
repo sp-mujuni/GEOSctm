@@ -13,10 +13,11 @@
 !
 ! !USES:
       use ESMF
-      use MAPL
+      use MAPL_Mod
       USE Chem_UtilMod
       use GmiArrayBundlePointer_mod
       USE GmiESMFrcFileReading_mod
+      USE convectiveTransport_mod
 !
       implicit none
 !
@@ -164,39 +165,31 @@
       !------ ------------------------
 
       call ESMF_ConfigGetAttribute(convConfigFile, self%convec_opt, &
-     &                label   = "convec_opt:",&
-     &                default = 0, rc=STATUS )
-      VERIFY_(STATUS)
+                      label   = "convec_opt:",&
+                      default = 0, __RC__ )
 
-      call ESMF_ConfigGetAttribute(convConfigFile, value=self%det_ent, &
-                     label="det_ent:", default=.false., rc=STATUS)
-      VERIFY_(STATUS)
+      call ESMF_ConfigGetAttribute(convConfigFile, self%det_ent, &
+                     label = "det_ent:", default=.false., __RC__ )
 
-      call ESMF_ConfigGetAttribute(convConfigFile, value=self%do_downdraft, &
-                     label="do_downdraft:", default=.false., rc=STATUS)
-      VERIFY_(STATUS)
+      call ESMF_ConfigGetAttribute(convConfigFile, self%do_downdraft, &
+                     label = "do_downdraft:", default=.false., __RC__  )
 
-      call ESMF_ConfigGetAttribute(convConfigFile, value=self%do_old_ncar, &
-                     label="do_old_ncar:", default=.false., rc=STATUS)
-      VERIFY_(STATUS)
+      call ESMF_ConfigGetAttribute(convConfigFile, self%do_old_ncar, &
+                     label = "do_old_ncar:", default=.false., __RC__ )
 
       call ESMF_ConfigGetAttribute(convConfigFile, self%met_opt, &
-     &                label   = "met_opt:",&
-     &                default = 0, rc=STATUS )
-      VERIFY_(STATUS)
+                      label   = "met_opt:",&
+                      default = 0, __RC__ )
 
       call ESMF_ConfigGetAttribute(convConfigFile, self%chem_opt, &
-     &                label   = "chem_opt:",&
-     &                default = 0, rc=STATUS )
-      VERIFY_(STATUS)
+                      label   = "chem_opt:",&
+                      default = 0, __RC__ )
 
-      call ESMF_ConfigGetAttribute(convConfigFile, value=self%do_wetdep, &
-                     label="do_wetdep:", default=.false., rc=STATUS)
-      VERIFY_(STATUS)
+      call ESMF_ConfigGetAttribute(convConfigFile, self%do_wetdep, &
+                     label = "do_wetdep:", default=.false., __RC__ )
 
-      call ESMF_ConfigGetAttribute(convConfigFile, value=self%do_drydep, &
-                     label="do_drydep:", default=.false., rc=STATUS)
-      VERIFY_(STATUS)
+      call ESMF_ConfigGetAttribute(convConfigFile, self%do_drydep, &
+                     label = "do_drydep:", default=.false., __RC__ )
 
       IF ( MAPL_AM_I_ROOT() ) THEN
          PRINT*," -----> det_ent      = ", self%det_ent
@@ -241,7 +234,7 @@
 ! !INTERFACE:
 !
       subroutine runGmiConvection (self, impConv, expConv, nymd, nhms,  &
-                    tdt, enable_rasCalculations, rc)
+                    tdt, rc)
 !
 ! !USES:
 !
@@ -249,7 +242,6 @@
       TYPE(ESMF_State), INTENT(INOUT) :: impConv ! Import State
       INTEGER, INTENT(IN) :: nymd, nhms          ! time
       REAL,    INTENT(IN) :: tdt                 ! chemical timestep (secs)
-      LOGICAL, INTENT(IN) :: enable_rasCalculations ! do RAS calculations?
 !
 ! !OUTPUT PARAMETERS:
       INTEGER, INTENT(OUT) ::  rc                ! Error return code:
@@ -449,14 +441,8 @@
       CALL MAPL_GetPointer(impConv,       ple,     'PLE', RC=STATUS); VERIFY_(STATUS)
       CALL MAPL_GetPointer(impConv, totalMass,    'MASS', RC=STATUS); VERIFY_(STATUS)
       CALL MAPL_GetPointer(impConv,       zle,     'ZLE', RC=STATUS); VERIFY_(STATUS)
-
-      IF (enable_rasCalculations) THEN
-         CALL MAPL_GetPointer(expConv,   CNV_MFD, 'CNV_MFD', RC=STATUS); VERIFY_(STATUS)
-         CALL MAPL_GetPointer(expConv,   CNV_MFC, 'CNV_MFC', RC=STATUS); VERIFY_(STATUS)
-      ELSE
-         CALL MAPL_GetPointer(impConv,   CNV_MFD, 'CNV_MFD', RC=STATUS); VERIFY_(STATUS)
-         CALL MAPL_GetPointer(impConv,   CNV_MFC, 'CNV_MFC', RC=STATUS); VERIFY_(STATUS)
-      ENDIF
+      CALL MAPL_GetPointer(impConv,   CNV_MFD, 'CNV_MFD', RC=STATUS); VERIFY_(STATUS)
+      CALL MAPL_GetPointer(impConv,   CNV_MFC, 'CNV_MFC', RC=STATUS); VERIFY_(STATUS)
 
       allocate(lwi_flags(i1:i2,j1:j2),           STAT=STATUS); VERIFY_(STATUS)
       allocate(pbl(i1:i2,j1:j2),                 STAT=STATUS); VERIFY_(STATUS)

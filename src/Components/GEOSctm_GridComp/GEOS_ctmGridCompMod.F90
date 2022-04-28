@@ -17,6 +17,7 @@
       use MAPL
       use Bundle_IncrementMod
 
+      use GEOS_ctmHistGridComp,      only : HctmSetServices  => SetServices
       use GEOS_ctmEnvGridComp,       only : EctmSetServices  => SetServices
       use CTM_ConvectionGridCompMod, only : ConvSetServices  => SetServices
       use CTM_DiffusionGridCompMod,  only : DiffSetServices  => SetServices
@@ -42,7 +43,7 @@
 ! 
 ! \paragraph{Runnng the Code:}
 !
-!   The code acn be run in two main configurations:
+!   The code can be run in two main configurations:
 !   \begin{enumerate}
 !   \item \textbf{Passive Tracer Run:} This experiment is done to verify how well 
 !         AdvCore transports the tracers. We want to find out if the advection 
@@ -88,18 +89,28 @@
 ! 
 !EOP
 !------------------------------------------------------------------------------
-      integer :: CHEM = -1
-      integer :: CONV = -1
-      integer :: DIFF = -1
-      integer :: ADV3 = -1
-      integer :: ECTM = -1
-      integer :: PTRA = -1
+      !Derived types for the internal state
+      type T_CTM_STATE
+         private
+         integer                    :: CHEM = -1
+         integer                    :: CONV = -1
+         integer                    :: DIFF = -1
+         integer                    :: ADV3 = -1
+         integer                    :: ECTM = -1
+         integer                    :: HCTM = -1
+         integer                    :: PTRA = -1
+         logical                    :: do_ctmConvection = .FALSE. ! do Convection?
+         logical                    :: do_ctmDiffusion  = .FALSE. ! do Diffusion?
+         logical                    :: do_ctmAdvection  = .TRUE.  ! do Advection?
+         logical                    :: output_forcingData  = .FALSE. ! Export variables to HISTORY?
+         logical                    :: enable_pTracers  = .FALSE. ! do idealized Passive Tracers?
+         character(len=ESMF_MAXSTR) :: metType                    ! MERRA2 or MERRA1 or FPIT or FP
+      end type T_CTM_STATE
 
-      logical :: enable_pTracers  = .FALSE.
-      logical :: do_ctmAdvection  = .FALSE.
-      logical :: do_ctmConvection = .FALSE.
-      logical :: do_ctmDiffusion  = .FALSE.
-      character(len=ESMF_MAXSTR) :: metType ! MERRA2 or MERRA1 or FPIT or FP
+      type CTM_WRAP
+         type (T_CTM_STATE), pointer :: PTR
+      end type CTM_WRAP
+
 !------------------------------------------------------------------------------
       contains
 !------------------------------------------------------------------------------
@@ -135,65 +146,84 @@
       character(len=ESMF_MAXSTR)    :: COMP_NAME
       CHARACTER(LEN=ESMF_MAXSTR)    :: rcfilen = 'CTM_GridComp.rc'
       character(len=ESMF_MAXSTR)    :: IAm = 'SetServices'
+      type (T_CTM_STATE), pointer   :: state
+      type (CTM_WRAP)               :: wrap
 
       ! Get my name and set-up traceback handle
       ! ---------------------------------------
 
       Iam = 'SetServices'
-      call ESMF_GridCompGet( GC, NAME=COMP_NAME, CONFIG=CF, RC=STATUS )
+      call ESMF_GridCompGet( GC, NAME=COMP_NAME, CONFIG=CF, __RC__ )
       VERIFY_(STATUS)
       Iam = trim(COMP_NAME) // "::" // Iam
+
+      ! Wrap internal state for storing in GC; rename legacyState
+      ! -------------------------------------
+      allocate ( state, stat=STATUS )
+      VERIFY_(STATUS)
+      wrap%ptr => state
 
       ! Register services for this component
       ! ------------------------------------
 
-      call MAPL_GridCompSetEntryPoint ( GC, ESMF_METHOD_INITIALIZE, Initialize, RC=STATUS )
-      VERIFY_(STATUS)
-      call MAPL_GridCompSetEntryPoint ( GC, ESMF_METHOD_RUN,  Run,        RC=STATUS )
+      call MAPL_GridCompSetEntryPoint ( GC, ESMF_METHOD_INITIALIZE, Initialize, __RC__ )
+      call MAPL_GridCompSetEntryPoint ( GC, ESMF_METHOD_RUN,  Run,        __RC__ )
+
+      ! Save pointer to the wrapped internal state in the GC
+      !-----------------------------------------------------
+      call ESMF_UserCompSetInternalState ( GC, 'CTM_GridComp', wrap, STATUS )
       VERIFY_(STATUS)
 
       ! Choose children to birth and which children not to conceive
       ! -----------------------------------------------------------
-      configFile = ESMF_ConfigCreate(rc=STATUS )
-      VERIFY_(STATUS)
+      configFile = ESMF_ConfigCreate( __RC__ )
 
-      call ESMF_ConfigLoadFile(configFile, TRIM(rcfilen), rc=STATUS )
-      VERIFY_(STATUS)
+      call ESMF_ConfigLoadFile(configFile, TRIM(rcfilen),  __RC__ )
 
-      call ESMF_ConfigGetAttribute(configFile, enable_pTracers,             &
+      call ESMF_ConfigGetAttribute(configFile, state%output_forcingData,     &
+                             Default  = .FALSE.,                       &
+                             Label    = "output_forcingData:",  __RC__ )
+
+      call ESMF_ConfigGetAttribute(configFile, state%enable_pTracers,       &
                                      Default  = .FALSE.,                    &
                                      Label    = "ENABLE_pTracers:",  __RC__ )
 
-      call ESMF_ConfigGetAttribute(configFile, do_ctmConvection,            &
+      call ESMF_ConfigGetAttribute(configFile, state%do_ctmConvection,      &
                                      Default  = .FALSE.,                    &
                                      Label    = "do_ctmConvection:", __RC__ )
 
-      call ESMF_ConfigGetAttribute(configFile, do_ctmAdvection,             &
+      call ESMF_ConfigGetAttribute(configFile, state%do_ctmAdvection,       &
                                      Default  = .TRUE.,                     &
                                      Label    = "do_ctmAdvection:",  __RC__ )
 
-      call ESMF_ConfigGetAttribute(configFile, do_ctmDiffusion,             &
+      call ESMF_ConfigGetAttribute(configFile, state%do_ctmDiffusion,       &
                                      Default  = .FALSE.,                    &
                                      Label    = "do_ctmDiffusion:",  __RC__ )
 
       ! Type of meteological fields (MERRA2 or MERRA1 or FPIT or FP)
-      call ESMF_ConfigGetAttribute(configFile, metType,                     &
+      call ESMF_ConfigGetAttribute(configFile, state%metType,               &
                                      Default  = 'MERRA2',                   &
                                      Label    = "metType:",          __RC__ )
 
-      IF ((TRIM(metType) == "F515_516") .OR. &
-          (TRIM(metType) == "F5131"))            metType = "FP"
+      IF ((TRIM(state%metType) == "F515_516") .OR. &
+          (TRIM(state%metType) == "F5131"))            state%metType = "FP"
+
+      ! Turn Convection on for any Chemistry configuration
+      IF (.NOT. state%enable_pTracers) THEN
+         state%do_ctmConvection = .TRUE.
+      ENDIF
 
       IF ( MAPL_am_I_root() ) THEN
          PRINT*
          PRINT*, "---------------------------------------------------"
          PRINT*, "-----             GEOS CTM Settings           -----"
          PRINT*, "---------------------------------------------------"
-         PRINT*,'   Doing Passive Tracer?: ', enable_pTracers
-         PRINT*,'               Advection: ', do_ctmAdvection
-         PRINT*,'              Convection: ', do_ctmConvection
-         PRINT*,'               Diffusion: ', do_ctmDiffusion
-         PRINT*,'     Meteological Fields: ', TRIM(metType)
+         PRINT*,'   Doing Passive Tracer?: ', state%enable_pTracers
+         PRINT*,'    Output forcing data?: ', state%output_forcingData
+         PRINT*,'               Advection: ', state%do_ctmAdvection
+         PRINT*,'              Convection: ', state%do_ctmConvection
+         PRINT*,'               Diffusion: ', state%do_ctmDiffusion
+         PRINT*,'     Meteological Fields: ', TRIM(state%metType)
          PRINT*, "---------------------------------------------------"
          PRINT*
       END IF
@@ -202,130 +232,153 @@
       ! Create children`s gridded components and invoke their SetServices
       ! -----------------------------------------------------------------
 
-      IF (enable_pTracers) THEN
+      IF (state%enable_pTracers) THEN
          ! Doing passive tracer experiment
          !--------------------------------
-         ADV3 = MAPL_AddChild(GC, NAME='DYNAMICS',   SS=AdvCSetServices, __RC__)
-         ECTM = MAPL_AddChild(GC, NAME='CTMenv',     SS=EctmSetServices, __RC__)
-         PTRA = MAPL_AddChild(GC, NAME='PTRACERS',   SS=pTraSetServices, __RC__)
+         state%ADV3 = MAPL_AddChild(GC, NAME='DYNAMICS',   SS=AdvCSetServices, __RC__)
+         state%ECTM = MAPL_AddChild(GC, NAME='CTMenv',     SS=EctmSetServices, __RC__)
+         state%PTRA = MAPL_AddChild(GC, NAME='PTRACERS',   SS=pTraSetServices, __RC__)
+
+         ! Do you want to provide forcing data to HISTOTY?
+         if (state%output_forcingData) then
+            state%HCTM = MAPL_AddChild(GC, NAME='CTMhist',    SS=HctmSetServices, __RC__)
+         endif
 
          ! Are you doing Convection?
-         if (do_ctmConvection) then
-            CONV = MAPL_AddChild(GC, NAME='CONVECTION', SS=ConvSetServices, __RC__)
+         if (state%do_ctmConvection) then
+            state%CONV = MAPL_AddChild(GC, NAME='CONVECTION', SS=ConvSetServices, __RC__)
          end if
 
          ! Are you doing Diffusion?
-         if (do_ctmDiffusion) then
-            DIFF = MAPL_AddChild(GC, NAME='DIFFUSION',  SS=DiffSetServices, __RC__)
+         if (state%do_ctmDiffusion) then
+            state%DIFF = MAPL_AddChild(GC, NAME='DIFFUSION',  SS=DiffSetServices, __RC__ )
          end if
       ELSE
-         ADV3 = MAPL_AddChild(GC, NAME='DYNAMICS',   SS=AdvCSetServices, __RC__)
-         CHEM = MAPL_AddChild(GC, NAME='CHEMISTRY',  SS=ChemSetServices, __RC__)
-         ECTM = MAPL_AddChild(GC, NAME='CTMenv',     SS=EctmSetServices, __RC__)
+         state%ADV3 = MAPL_AddChild(GC, NAME='DYNAMICS',   SS=AdvCSetServices, __RC__)
+         state%CHEM = MAPL_AddChild(GC, NAME='CHEMISTRY',  SS=ChemSetServices, __RC__)
+         state%ECTM = MAPL_AddChild(GC, NAME='CTMenv',     SS=EctmSetServices, __RC__)
+
+         ! Do you want to provide forcing data to HISTOTY?
+         if (state%output_forcingData) then
+            state%HCTM = MAPL_AddChild(GC, NAME='CTMhist',    SS=HctmSetServices, __RC__)
+         endif
 
          ! Are you doing Convection?
-         if (do_ctmConvection) then
-            CONV = MAPL_AddChild(GC, NAME='CONVECTION', SS=ConvSetServices, __RC__)
+         if (state%do_ctmConvection) then
+            state%CONV = MAPL_AddChild(GC, NAME='CONVECTION', SS=ConvSetServices, __RC__)
          end if
 
          ! Are you doing Diffusion?
-         if (do_ctmDiffusion) then
-            DIFF = MAPL_AddChild(GC, NAME='DIFFUSION',  SS=DiffSetServices, __RC__)
+         if (state%do_ctmDiffusion) then
+            state%DIFF = MAPL_AddChild(GC, NAME='DIFFUSION',  SS=DiffSetServices, __RC__)
          end if
       END IF
 
-      call MAPL_TimerAdd(GC, name="INITIALIZE"    ,RC=STATUS)
-      VERIFY_(STATUS)
-
-      call MAPL_TimerAdd(GC, name="RUN"           ,RC=STATUS)
-      VERIFY_(STATUS)
+      call MAPL_TimerAdd(GC, name="INITIALIZE", __RC__)
+      call MAPL_TimerAdd(GC, name="RUN"       , __RC__)
 
       ! -------------------------------
       ! Connectivities between Children
       ! -------------------------------
       CALL MAPL_AddConnectivity ( GC, &
                SHORT_NAME  = (/'AREA'/), &
-               DST_ID = ECTM, SRC_ID = ADV3, __RC__  )
+               DST_ID = state%ECTM, SRC_ID = state%ADV3, __RC__  )
 
       CALL MAPL_AddConnectivity ( GC, &
                SRC_NAME  = (/ 'CXr8  ', 'CYr8  ', 'MFXr8 ', 'MFYr8 ', 'PLE0r8', 'PLE1r8' /), &
                DST_NAME  = (/ 'CX    ', 'CY    ', 'MFX   ', 'MFY   ', 'PLE0  ', 'PLE1  ' /), &
-               DST_ID = ADV3, SRC_ID = ECTM, __RC__  )
+               DST_ID = state%ADV3, SRC_ID = state%ECTM, __RC__  )
       CALL MAPL_TerminateImport    ( GC,    &
                SHORT_NAME = (/'TRADV'/),          &
-               CHILD = ADV3,    __RC__  )
+               CHILD = state%ADV3,    __RC__  )
+
+      IF (state%output_forcingData) THEN
+         CALL MAPL_AddConnectivity ( GC, &
+                 SHORT_NAME  = (/'PLE'/), &
+                 DST_ID = state%HCTM, SRC_ID = state%ECTM, __RC__  )
+      ENDIF
 
       ! Doing Convection
-      IF (do_ctmConvection) THEN
+      IF (state%do_ctmConvection) THEN
+         CALL MAPL_AddConnectivity ( GC, &
+                 SHORT_NAME  = (/ 'CNV_MFC', 'CNV_MFD' /), &
+                 DST_ID = state%CONV, SRC_ID = state%ECTM, __RC__  )
+
          CALL MAPL_AddConnectivity ( GC, &
                  SHORT_NAME  = (/'AREA'/), &
-                 DST_ID = CONV, SRC_ID = ADV3, __RC__  )
+                 DST_ID = state%CONV, SRC_ID = state%ADV3, __RC__  )
 
-         IF ( (TRIM(metType) == 'MERRA2') .OR. &
-              (TRIM(metType) == 'FPIT')   .OR. &
-              (TRIM(metType) == 'FP') ) THEN
-               CALL MAPL_AddConnectivity ( GC, &
+         IF ( (TRIM(state%metType) == 'MERRA2') .OR. &
+              (TRIM(state%metType) == 'FPIT')   .OR. &
+              (TRIM(state%metType) == 'FP') ) THEN
+            CALL MAPL_AddConnectivity ( GC, &
                     SHORT_NAME  = (/'PLE ', 'MASS', 'LWI '/), &
-                    DST_ID = CONV, SRC_ID = ECTM, __RC__  )
-         ELSEIF ( TRIM(metType) == 'MERRA1') THEN
+                    DST_ID = state%CONV, SRC_ID = state%ECTM, __RC__  )
+         ELSEIF ( TRIM(state%metType) == 'MERRA1') THEN
             CALL MAPL_AddConnectivity ( GC, &
                     SHORT_NAME  = (/'PLE ', 'MASS', 'ZLE ', 'LWI '/), &
-                    DST_ID = CONV, SRC_ID = ECTM, __RC__  )
+                    DST_ID = state%CONV, SRC_ID = state%ECTM, __RC__  )
          END IF
 
          CALL MAPL_TerminateImport    ( GC,    &
                SHORT_NAME = (/'ConvTR'/),          &
-               CHILD = CONV,    __RC__  )
+               CHILD = state%CONV,    __RC__  )
       END IF
 
       ! Doing Diffusion
-      IF (do_ctmDiffusion) THEN
+      IF (state%do_ctmDiffusion) THEN
          CALL MAPL_AddConnectivity ( GC, &
                  SHORT_NAME  = (/'AREA'/), &
-                 DST_ID = DIFF, SRC_ID = ADV3, __RC__  )
+                 DST_ID = state%DIFF, SRC_ID = state%ADV3, __RC__  )
 
-         IF ( (TRIM(metType) == 'MERRA2') .OR. &
-              (TRIM(metType) == 'FPIT')   .OR. &
-              (TRIM(metType) == 'FP') ) THEN
+         IF ( (TRIM(state%metType) == 'MERRA2') .OR. &
+              (TRIM(state%metType) == 'FPIT')   .OR. &
+              (TRIM(state%metType) == 'FP') ) THEN
             CALL MAPL_AddConnectivity ( GC, &
                     SHORT_NAME  = (/'PLE ', 'MASS'/), &
-                    DST_ID = DIFF, SRC_ID = ECTM, __RC__  )
-         ELSEIF ( TRIM(metType) == 'MERRA1') THEN
+                    DST_ID = state%DIFF, SRC_ID = state%ECTM, __RC__  )
+         ELSEIF ( TRIM(state%metType) == 'MERRA1') THEN
             CALL MAPL_AddConnectivity ( GC, &
                     SHORT_NAME  = (/'PLE ', 'MASS', 'ZLE '/), &
-                    DST_ID = DIFF, SRC_ID = ECTM, __RC__  )
+                    DST_ID = state%DIFF, SRC_ID = state%ECTM, __RC__  )
          END IF
 
          CALL MAPL_TerminateImport    ( GC,    &
                SHORT_NAME = (/'DiffTR'/),          &
-               CHILD = DIFF,    __RC__  )
+               CHILD = state%DIFF,    __RC__  )
       END IF
 
-      IF (enable_pTracers) THEN
+      IF (state%enable_pTracers) THEN
          CALL MAPL_AddConnectivity ( GC, &
                  SHORT_NAME  = (/'AREA'/), &
-                 DST_ID = PTRA, SRC_ID = ADV3, __RC__  )
+                 DST_ID = state%PTRA, SRC_ID = state%ADV3, __RC__  )
 
          CALL MAPL_AddConnectivity ( GC, &
                  SHORT_NAME  = (/'PLE'/), &
-                 DST_ID = PTRA, SRC_ID = ECTM, __RC__  )
+                 DST_ID = state%PTRA, SRC_ID = state%ECTM, __RC__  )
       ELSE
          CALL MAPL_AddConnectivity ( GC, &
                  SHORT_NAME  = (/'AREA'/), &
-                 DST_ID = CHEM, SRC_ID = ADV3, __RC__  )
+                 DST_ID = state%CHEM, SRC_ID = state%ADV3, __RC__  )
+
+         IF (state%do_ctmConvection) THEN
+            CALL MAPL_AddConnectivity ( GC, &
+                    SHORT_NAME  = (/ 'CNV_MFC', 'CNV_MFD' /), &
+                    DST_ID = state%CHEM, SRC_ID = state%ECTM, __RC__  )
+         ENDIF
 
          ! This is done for MERRA1, MERRA2, FPIT, FP
          CALL MAPL_AddConnectivity ( GC, &
                  SHORT_NAME  = (/ 'LFR   ', 'QCTOT ', 'TH    ', 'PLE   ', &
-                                  'LWI   ', 'CNV_QC', &
+                                  'LWI   ', 'CNV_QC', 'U     ', 'V     ', &
                                   'BYNCY ', 'ITY   ', 'QICN  ', 'QLCN  ' /), &
-                 DST_ID = CHEM, SRC_ID = ECTM, __RC__  )
+                 DST_ID = state%CHEM, SRC_ID = state%ECTM, __RC__  )
 
          ! Additional Connectivity if using MERRA1
-         IF ( TRIM(metType) == 'MERRA1') THEN
+         IF ( TRIM(state%metType) == 'MERRA1') THEN
             CALL MAPL_AddConnectivity ( GC, &
                     SHORT_NAME  = (/ 'ZLE   ', 'RH2   ' /), &
-                    DST_ID = CHEM, SRC_ID = ECTM, __RC__  )
+                    DST_ID = state%CHEM, SRC_ID = state%ECTM, __RC__  )
          END IF
       END IF
 
@@ -335,32 +388,25 @@
            SHORT_NAME  = 'TRADVI',                                 &
            LONG_NAME   = 'advected_quantities_tendencies',         &
            units       = 'UNITS s-1',                              &
-           DATATYPE    = MAPL_BundleItem,                          &
-                                                      RC=STATUS  )
-      VERIFY_(STATUS)
+           DATATYPE    = MAPL_BundleItem,         __RC__ )
 
       call MAPL_AddExportSpec(GC,                                  &
            SHORT_NAME  = 'MTRI',                                   &
            LONG_NAME   = 'moist_quantities_tendencies',            &
            units       = 'UNITS s-1',                              &
-           DATATYPE    = MAPL_BundleItem,                          &
-                                                      RC=STATUS  )
-      VERIFY_(STATUS)
+           DATATYPE    = MAPL_BundleItem,          __RC__ )
 
       call MAPL_AddExportSpec(GC,                                  &
            SHORT_NAME  = 'TRI',                                    &
            LONG_NAME   = 'turbulence_quantities_tendencies',       &
            units       = 'UNITS s-1',                              &
-           DATATYPE    = MAPL_BundleItem,                          &
-                                                      RC=STATUS  )
-      VERIFY_(STATUS)
+           DATATYPE    = MAPL_BundleItem,        __RC__ )
 
       ! Create grid for this GC
       !------------------------
       !call MAPL_GridCreate  (GC, __RC__ )
 
-      call MAPL_GenericSetServices ( GC, RC=STATUS )
-      VERIFY_(STATUS)
+      call MAPL_GenericSetServices ( GC, __RC__ )
 
       RETURN_(ESMF_SUCCESS)
   
@@ -408,20 +454,22 @@
       integer                             :: NA
       character(len=ESMF_MAXSTR), pointer :: NAMES(:)
       character(len=ESMF_MAXSTR)          :: myNAME
+      character(len=ESMF_MAXSTR)          :: varName
       character(len=ESMF_MAXSTR)          ::  iNAME
       character(len=ESMF_MAXSTR)          :: COMP_NAME
       character(len=ESMF_MAXSTR)          :: IAm = "Initialize"
       real(REAL64), allocatable           :: ak(:),bk(:)
       real(REAL64)                        :: ptop, pint
-      integer                             :: counts(3),lm,ls
+      integer                             :: counts(3),lm,ls, ib
+      type (T_CTM_STATE), pointer         :: CTM_STATE
+      type (CTM_WRAP)                     :: WRAP
 
 
       ! Get the target components name and set-up traceback handle.
       ! -----------------------------------------------------------
 
       !call ESMF_GridCompGet ( GC, name=COMP_NAME, GRID=GRID, RC=STATUS )
-      call ESMF_GridCompGet ( GC, name=COMP_NAME, RC=STATUS )
-      VERIFY_(STATUS)
+      call ESMF_GridCompGet ( GC, name=COMP_NAME, __RC__ )
       Iam = trim(COMP_NAME) // "::" // TRIM(Iam)
 
       ! Create grid for this GC
@@ -438,69 +486,70 @@
       allocate(bk(lm+1),stat=status)
       VERIFY_(STATUS)
       call set_eta(lm,ls,ptop,pint,ak,bk)
-      call ESMF_AttributeSet(grid,name='GridAK', itemCount=LM+1, &
-           valuelist=ak,rc=status)
+      call ESMF_AttributeSet(grid, name='GridAK', itemCount=LM+1, &
+                             valuelist=ak, __RC__)
       VERIFY_(STATUS)
-      call ESMF_AttributeSet(grid,name='GridBK', itemCount=LM+1, &
-           valuelist=bk,rc=status)
+      call ESMF_AttributeSet(grid, name='GridBK', itemCount=LM+1, &
+                             valuelist=bk, __RC__)
       VERIFY_(STATUS)
       deallocate(ak,bk)
 
       ! Get my MAPL_Generic state
       !--------------------------
 
-      call MAPL_GetObjectFromGC ( GC, STATE, RC=STATUS)
-      VERIFY_(STATUS)
+      call MAPL_GetObjectFromGC ( GC, STATE, __RC__ )
 
       ! Call Initialize for every Child
       !--------------------------------
-      call MAPL_GenericInitialize ( GC, IMPORT, EXPORT, CLOCK,  RC=STATUS)
-      VERIFY_(STATUS)
+      call MAPL_GenericInitialize ( GC, IMPORT, EXPORT, CLOCK,  __RC__ )
 
       call MAPL_TimerOn(STATE,"TOTAL")
       call MAPL_TimerOn(STATE,"INITIALIZE")
 
+      ! Get my private state from the component
+      !----------------------------------------
+      call ESMF_UserCompGetInternalState(GC, 'CTM_GridComp', WRAP, STATUS )
+      VERIFY_(STATUS)
+
+      CTM_STATE => WRAP%PTR
+
 #ifdef PRINT_STATES
       call WRITE_PARALLEL ( trim(Iam)//": IMPORT State" )
-      if ( MAPL_am_I_root() ) call ESMF_StatePrint ( IMPORT, rc=STATUS )
+      if ( MAPL_am_I_root() ) call ESMF_StatePrint ( IMPORT, __RC__ )
       call WRITE_PARALLEL ( trim(Iam)//": EXPORT State" )
-      if ( MAPL_am_I_root() ) call ESMF_StatePrint ( EXPORT, rc=STATUS )
+      if ( MAPL_am_I_root() ) call ESMF_StatePrint ( EXPORT, __RC__ )
 #endif
 
 
       ! Get children and their im/ex states from my generic state.
       !----------------------------------------------------------
 
-      call MAPL_Get ( STATE, GCS=GCS, GIM=GIM, GEX=GEX, RC=STATUS )
-      VERIFY_(STATUS)
+      call MAPL_Get ( STATE, GCS=GCS, GIM=GIM, GEX=GEX, __RC__ )
 
       ! Extract the friendly tracers
       !-----------------------------
-      IF (enable_pTracers) THEN
-         if (do_ctmDiffusion) then
+      IF (CTM_STATE%enable_pTracers) THEN
+         if (CTM_STATE%do_ctmDiffusion) then
             !------------------
             ! Diffusion Tracers
             !------------------
-            call ESMF_StateGet   (GIM(DIFF),  'DiffTR' , BUNDLE, RC=STATUS )
-            VERIFY_(STATUS)
+            call ESMF_StateGet   (GIM(CTM_STATE%DIFF),  'DiffTR' , BUNDLE, __RC__  )
 
-            call MAPL_GridCompGetFriendlies(GCS(PTRA), "TURBULENCE", BUNDLE, RC=STATUS )
-            VERIFY_(STATUS)
+            call MAPL_GridCompGetFriendlies(GCS(CTM_STATE%PTRA), "TURBULENCE", BUNDLE, __RC__  )
 
 #ifdef PRINT_STATES
             call WRITE_PARALLEL ( trim(Iam)//": Diffusion Tracer Bundle" )
-            if ( MAPL_am_I_root() ) call ESMF_FieldBundlePrint ( BUNDLE, rc=STATUS )
+            if ( MAPL_am_I_root() ) call ESMF_FieldBundlePrint ( BUNDLE, __RC__ )
 #endif
 
             ! Fill the diffusion increments bundle
             !---------------------------------
-            call Initialize_IncBundle_init(GC, GIM(DIFF), EXPORT, TRIincCTM, __RC__)
+            call Initialize_IncBundle_init(GC, GIM(CTM_STATE%DIFF), EXPORT, TRIincCTM, __RC__)
 
             ! Count tracers
             !--------------
 
-            call ESMF_FieldBundleGet(BUNDLE,FieldCount=NUM_TRACERS, RC=STATUS)
-            VERIFY_(STATUS)
+            call ESMF_FieldBundleGet(BUNDLE,FieldCount=NUM_TRACERS, __RC__ )
 
             ! Get the names of all tracers to fill other turbulence bundles.
             !---------------------------------------------------------------
@@ -508,54 +557,47 @@
             allocate(NAMES(NUM_TRACERS),STAT=STATUS)
             VERIFY_(STATUS)
 
-            call ESMF_FieldBundleGet(BUNDLE, fieldNameList=NAMES,  RC=STATUS)
-            VERIFY_(STATUS)
+            call ESMF_FieldBundleGet(BUNDLE, fieldNameList=NAMES,  __RC__ )
          end if
 
-         if (do_ctmConvection) then
+         if (CTM_STATE%do_ctmConvection) then
             !-------------------
             ! Convection Tracers
             !-------------------
-            call ESMF_StateGet       (GIM(CONV), 'ConvTR', BUNDLE, RC=STATUS )
-            VERIFY_(STATUS)
+            call ESMF_StateGet       (GIM(CTM_STATE%CONV), 'ConvTR', BUNDLE, __RC__  )
 
-            call MAPL_GridCompGetFriendlies(GCS(PTRA), "MOIST", BUNDLE, RC=STATUS )
-            VERIFY_(STATUS)
+            call MAPL_GridCompGetFriendlies(GCS(CTM_STATE%PTRA), "MOIST", BUNDLE, __RC__  )
 
 #ifdef PRINT_STATES
             call WRITE_PARALLEL ( trim(Iam)//": Convective Transport Bundle" )
-            if ( MAPL_am_I_root() ) call ESMF_FieldBundlePrint ( BUNDLE, rc=STATUS )
+            if ( MAPL_am_I_root() ) call ESMF_FieldBundlePrint ( BUNDLE, __RC__ )
 #endif
 
             ! Fill the moist increments bundle
             !---------------------------------
-            call Initialize_IncBundle_init(GC, GIM(CONV), EXPORT, MTRIincCTM, __RC__)
+            call Initialize_IncBundle_init(GC, GIM(CTM_STATE%CONV), EXPORT, MTRIincCTM, __RC__)
 
-            call ESMF_FieldBundleGet(BUNDLE,FieldCount=NUM_TRACERS, RC=STATUS)
-            VERIFY_(STATUS)
+            call ESMF_FieldBundleGet(BUNDLE,FieldCount=NUM_TRACERS, __RC__ )
          end if
 
          !----------------
          ! AdvCore Tracers
          !----------------
-         call ESMF_StateGet       (GIM(ADV3), 'TRADV', BUNDLE, RC=STATUS )
-         VERIFY_(STATUS)
+         call ESMF_StateGet       (GIM(CTM_STATE%ADV3), 'TRADV', BUNDLE, __RC__  )
   
-         call MAPL_GridCompGetFriendlies(GCS(PTRA), "DYNAMICS", BUNDLE, RC=STATUS )
-         VERIFY_(STATUS)
+         call MAPL_GridCompGetFriendlies(GCS(CTM_STATE%PTRA), "DYNAMICS", BUNDLE, __RC__  )
 
 #ifdef PRINT_STATES
          call WRITE_PARALLEL ( trim(Iam)//": AdvCore Tracer Bundle" )
-         if ( MAPL_am_I_root() ) call ESMF_FieldBundlePrint ( BUNDLE, rc=STATUS )
+         if ( MAPL_am_I_root() ) call ESMF_FieldBundlePrint ( BUNDLE, __RC__ )
 #endif
 
-         call ESMF_FieldBundleGet(BUNDLE,FieldCount=NUM_TRACERS, RC=STATUS)
-         VERIFY_(STATUS)
+         call ESMF_FieldBundleGet(BUNDLE,FieldCount=NUM_TRACERS, __RC__ )
 
          ! Initialize the advection increments bundle (TRADVI)
          ! with tracer increment names 
          !--------------------------------
-         call Initialize_IncBundle_init(GC, GIM(ADV3), EXPORT, DYNinc, __RC__)
+         call Initialize_IncBundle_init(GC, GIM(CTM_STATE%ADV3), EXPORT, DYNinc, __RC__)
 
 
          ! Get the names of all tracers to fill other turbulence bundles.
@@ -564,34 +606,30 @@
          allocate(NAMES(NUM_TRACERS),STAT=STATUS)
          VERIFY_(STATUS)
 
-         call ESMF_FieldBundleGet(BUNDLE, fieldNameList=NAMES,  RC=STATUS)
-         VERIFY_(STATUS)
+         call ESMF_FieldBundleGet(BUNDLE, fieldNameList=NAMES,  __RC__ )
 
       ELSE 
-         if (do_ctmDiffusion) then
+         if (CTM_STATE%do_ctmDiffusion) then
             !------------------
             ! Diffusion Tracers
             !------------------
-            call ESMF_StateGet   (GIM(DIFF),  'DiffTR' , BUNDLE, RC=STATUS )
-            VERIFY_(STATUS)
+            call ESMF_StateGet   (GIM(CTM_STATE%DIFF),  'DiffTR' , BUNDLE, __RC__  )
   
-            call MAPL_GridCompGetFriendlies(GCS(CHEM), "TURBULENCE", BUNDLE, RC=STATUS )
-            VERIFY_(STATUS)
+            call MAPL_GridCompGetFriendlies(GCS(CTM_STATE%CHEM), "TURBULENCE", BUNDLE, __RC__  )
 
 #ifdef PRINT_STATES
             call WRITE_PARALLEL ( trim(Iam)//": Diffusion Tracer Bundle" )
-            if ( MAPL_am_I_root() ) call ESMF_FieldBundlePrint ( BUNDLE, rc=STATUS )
+            if ( MAPL_am_I_root() ) call ESMF_FieldBundlePrint ( BUNDLE, __RC__ )
 #endif
 
             ! Fill the diffusion increments bundle
             !---------------------------------
-            call Initialize_IncBundle_init(GC, GIM(DIFF), EXPORT, TRIincCTM, __RC__)
+            call Initialize_IncBundle_init(GC, GIM(CTM_STATE%DIFF), EXPORT, TRIincCTM, __RC__)
 
             ! Count tracers
             !--------------
 
-            call ESMF_FieldBundleGet(BUNDLE,FieldCount=NUM_TRACERS, RC=STATUS)
-            VERIFY_(STATUS)
+            call ESMF_FieldBundleGet(BUNDLE,FieldCount=NUM_TRACERS, __RC__ )
 
             ! Get the names of all tracers to fill other turbulence bundles.
             !---------------------------------------------------------------
@@ -599,64 +637,69 @@
             allocate(NAMES(NUM_TRACERS),STAT=STATUS)
             VERIFY_(STATUS)
 
-            call ESMF_FieldBundleGet(BUNDLE, fieldNameList=NAMES,  RC=STATUS)
-            VERIFY_(STATUS)
+            call ESMF_FieldBundleGet(BUNDLE, fieldNameList=NAMES,  __RC__ )
          end if
 
-         if (do_ctmConvection) then
+         if (CTM_STATE%do_ctmConvection) then
             !-------------------
             ! Convection Tracers
             !-------------------
-            call ESMF_StateGet       (GIM(CONV), 'ConvTR', BUNDLE, RC=STATUS )
-            VERIFY_(STATUS)
+            call ESMF_StateGet       (GIM(CTM_STATE%CONV), 'ConvTR', BUNDLE, __RC__  )
   
-            call MAPL_GridCompGetFriendlies(GCS(CHEM), "MOIST", BUNDLE, RC=STATUS )
-            VERIFY_(STATUS)
+            call MAPL_GridCompGetFriendlies(GCS(CTM_STATE%CHEM), "MOIST", BUNDLE, __RC__  )
 
 #ifdef PRINT_STATES
             call WRITE_PARALLEL ( trim(Iam)//": Convective Transport Bundle" )
-            if ( MAPL_am_I_root() ) call ESMF_FieldBundlePrint ( BUNDLE, rc=STATUS )
+            if ( MAPL_am_I_root() ) call ESMF_FieldBundlePrint ( BUNDLE, __RC__ )
 #endif
 
             ! Fill the moist increments bundle
             !---------------------------------
-            call Initialize_IncBundle_init(GC, GIM(CONV), EXPORT, MTRIincCTM, __RC__)
+            call Initialize_IncBundle_init(GC, GIM(CTM_STATE%CONV), EXPORT, MTRIincCTM, __RC__)
 
-            call ESMF_FieldBundleGet(BUNDLE,FieldCount=NUM_TRACERS, RC=STATUS)
-            VERIFY_(STATUS)
+            call ESMF_FieldBundleGet(BUNDLE,FieldCount=NUM_TRACERS, __RC__ )
 
             IF (NUM_TRACERS .EQ. 0) THEN
                IF ( MAPL_am_I_root() ) THEN
                   PRINT*, '======================================='
-                  PRINT*, '-----> No tracer friendly to MOIST'
+                  PRINT*, '-----> No tracer was friendly to MOIST'
                   PRINT*, '-----> Convection will not be performed'
                   PRINT*, '======================================='
                END IF
-               do_ctmConvection = .FALSE.
+               CTM_STATE%do_ctmConvection = .FALSE.
+            ELSE
+               IF ( MAPL_am_I_root() ) THEN
+                  PRINT*, '======================================='
+                  PRINT*, '------ List of Convected Tracers ------'
+                  PRINT*, '======================================='
+                  DO ib = 1, NUM_TRACERS
+                     call ESMF_FieldBundleGet(BUNDLE, ib, FIELD,  __RC__)
+                     call ESMF_FieldGet(FIELD, name=varName,  __RC__)
+                     PRINT '(i4,a5,a20)', ib, '-->', TRIM(varName)
+                  ENDDO
+                  PRINT*, '======================================='
+               END IF
             END IF
          end if
 
          !----------------
          ! AdvCore Tracers
          !----------------
-         call ESMF_StateGet       (GIM(ADV3), 'TRADV', BUNDLE, RC=STATUS )
-         VERIFY_(STATUS)
+         call ESMF_StateGet       (GIM(CTM_STATE%ADV3), 'TRADV', BUNDLE, __RC__  )
 
-         call MAPL_GridCompGetFriendlies(GCS(CHEM), "DYNAMICS", BUNDLE, RC=STATUS )
-         VERIFY_(STATUS)
+         call MAPL_GridCompGetFriendlies(GCS(CTM_STATE%CHEM), "DYNAMICS", BUNDLE, __RC__  )
 
 #ifdef PRINT_STATES
          call WRITE_PARALLEL ( trim(Iam)//": AdvCore Tracer Bundle" )
-         if ( MAPL_am_I_root() ) call ESMF_FieldBundlePrint ( BUNDLE, rc=STATUS )
+         if ( MAPL_am_I_root() ) call ESMF_FieldBundlePrint ( BUNDLE, __RC__ )
 #endif
 
          ! Initialize the advection increments bundle (TRADVI)
          ! with tracer increment names
          !--------------------------------
-         call Initialize_IncBundle_init(GC, GIM(ADV3), EXPORT, DYNinc, __RC__)
+         call Initialize_IncBundle_init(GC, GIM(CTM_STATE%ADV3), EXPORT, DYNinc, __RC__)
 
-         call ESMF_FieldBundleGet(BUNDLE,FieldCount=NUM_TRACERS, RC=STATUS)
-         VERIFY_(STATUS)
+         call ESMF_FieldBundleGet(BUNDLE,FieldCount=NUM_TRACERS, __RC__ )
       END IF
 
       call MAPL_TimerOff(STATE,"INITIALIZE")
@@ -724,15 +767,13 @@
       integer                             :: NQ
       type (ESMF_FieldBundle)             :: Bundletest
       type (ESMF_Field)                   :: FIELD
-
-
-
+      type (T_CTM_STATE), pointer         :: CTM_STATE
+      type (CTM_WRAP)                     :: WRAP
 
       ! Get the target components name and set-up traceback handle.
       ! -----------------------------------------------------------
 
-      call ESMF_GridCompGet ( GC, name=COMP_NAME, config=CF, RC=STATUS )
-      VERIFY_(STATUS)
+      call ESMF_GridCompGet ( GC, name=COMP_NAME, config=CF, __RC__ )
       Iam = trim(COMP_NAME) // "::" // TRIM(Iam)
 
       ! Get my internal MAPL_Generic state
@@ -744,6 +785,13 @@
       call MAPL_TimerOn(STATE,"TOTAL")
       call MAPL_TimerOn(STATE,"RUN")
 
+      ! Get my private state from the component
+      !----------------------------------------
+      call ESMF_UserCompGetInternalState(GC, 'CTM_GridComp', WRAP, STATUS )
+      VERIFY_(STATUS)
+
+      CTM_STATE => WRAP%PTR
+
       ! Get the children`s states from the generic state
       !-------------------------------------------------
 
@@ -751,17 +799,14 @@
           GCS=GCS, GIM=GIM, GEX=GEX,       &
           IM = IM, JM = JM, LM = LM,       &
           GCNames = GCNames,               &
-          INTERNAL_ESMF_STATE = INTERNAL,  &
-                               RC=STATUS )
-      VERIFY_(STATUS)
+          INTERNAL_ESMF_STATE = INTERNAL,  __RC__ )
 
-      call ESMF_ConfigGetAttribute(CF, DT, Label="RUN_DT:" , RC=STATUS)
-      VERIFY_(STATUS)
+      call ESMF_ConfigGetAttribute(CF, DT, Label="RUN_DT:" , __RC__ )
 
       !---------------------
       ! Cinderella Component: to derive variables for other components
       !---------------------
-      I=ECTM
+      I = CTM_STATE%ECTM
 
       call MAPL_TimerOn (STATE,GCNames(I))
       call ESMF_GridCompRun (GCS(I),               &
@@ -772,49 +817,63 @@
       VERIFY_(STATUS)
       call MAPL_TimerOff(STATE,GCNames(I))
 
+      !-----------------------------------------------
+      ! CTM History to provide forcing data to HISTORY
+      !-----------------------------------------------
+      if (CTM_STATE%output_forcingData) then
+         I = CTM_STATE%HCTM
+
+          call MAPL_TimerOn (STATE,GCNames(I))
+          call ESMF_GridCompRun (GCS(I),               &
+                                 importState = GIM(I), &
+                                 exportState = GEX(I), &
+                                 clock       = CLOCK,  &
+                                 userRC      = STATUS  )
+          VERIFY_(STATUS)
+          call MAPL_TimerOff(STATE,GCNames(I))
+      end if
+
       !--------
       ! advCore
       !--------
       
       ! Initialize Dynamics increment bundle
       !--------------------------------------------
-      call Initialize_IncBundle_run(GIM(ADV3), EXPORT, DYNinc, __RC__)
+      call Initialize_IncBundle_run(GIM(CTM_STATE%ADV3), EXPORT, DYNinc, __RC__)
 
-      IF (do_ctmAdvection) THEN
-        I=ADV3
+      IF (CTM_STATE%do_ctmAdvection) THEN
+         I = CTM_STATE%ADV3
 
-        call Pack_Chem_Groups( GIM(ADV3) )  ! Prepare to transport chemical families
+         call Pack_Chem_Groups( GIM(I) )  ! Prepare to transport chemical families
 
-        call MAPL_TimerOn (STATE,GCNames(I))
-        call ESMF_GridCompRun (GCS(I),               &
-                             importState = GIM(I), &
-                             exportState = GEX(I), &
-                             clock       = CLOCK,  &
-                             userRC      = STATUS  )
-        VERIFY_(STATUS)
-        call MAPL_TimerOff(STATE,GCNames(I))
+         call MAPL_TimerOn (STATE,GCNames(I))
+         call ESMF_GridCompRun (GCS(I),               &
+                              importState = GIM(I), &
+                              exportState = GEX(I), &
+                              clock       = CLOCK,  &
+                              userRC      = STATUS  )
+         VERIFY_(STATUS)
+         call MAPL_TimerOff(STATE,GCNames(I))
 
-        ! Compute Dynamics increments and fill bundle
-        !--------------------------------------------
-        call Compute_IncBundle(GIM(ADV3), EXPORT, DYNinc, STATE, __RC__)
+         ! Compute Dynamics increments and fill bundle
+         !--------------------------------------------
+         call Compute_IncBundle(GIM(CTM_STATE%ADV3), EXPORT, DYNinc, STATE, __RC__)
 
-
-        call MAPL_GetPointer( GEX(ADV3), AREA, 'AREA', __RC__ )
-        call MAPL_GetPointer( GEX(ECTM), PLE,  'PLE',  __RC__ )
-        call MAPL_GetPointer( GIM(ECTM), Q,      'Q',  __RC__ )
-        call Unpack_Chem_Groups( GIM(ADV3), PLE, AREA, Q )   ! Finish transporting chemical families
+         call MAPL_GetPointer( GEX(CTM_STATE%ADV3), AREA, 'AREA', __RC__ )
+         call MAPL_GetPointer( GEX(CTM_STATE%ECTM), PLE,  'PLE',  __RC__ )
+         call MAPL_GetPointer( GIM(CTM_STATE%ECTM), Q,      'Q',  __RC__ )
+         call Unpack_Chem_Groups( GIM(CTM_STATE%ADV3), PLE, AREA, Q )   ! Finish transporting chemical families
       END IF
 
       !-----------
       ! Convection
       !-----------
-      IF (do_ctmConvection) THEN
+      IF (CTM_STATE%do_ctmConvection) THEN
+         I = CTM_STATE%CONV
 
          ! Initialize Moist increment bundle
          !----------------------------------
-         call Initialize_IncBundle_run(GIM(CONV), EXPORT, MTRIincCTM, __RC__)
-
-         I=CONV
+         call Initialize_IncBundle_run(GIM(I), EXPORT, MTRIincCTM, __RC__)
 
          call MAPL_TimerOn (STATE,GCNames(I))
          call ESMF_GridCompRun (GCS(I),               &
@@ -827,14 +886,14 @@
 
          ! Compute Moist increments and fill bundle
          !--------------------------------------------
-         call Compute_IncBundle(GIM(CONV), EXPORT, MTRIincCTM, STATE, __RC__)
+         call Compute_IncBundle(GIM(I), EXPORT, MTRIincCTM, STATE, __RC__)
       END IF
 
-      IF (.NOT. enable_pTracers) THEN
+      IF (.NOT. CTM_STATE%enable_pTracers) THEN
          !----------
          ! Chemistry: Phase 1
          !----------
-         I=CHEM   
+         I = CTM_STATE%CHEM   
 
          call MAPL_TimerOn (STATE,GCNames(I))
          call ESMF_GridCompRun (GCS(I),               &
@@ -851,13 +910,12 @@
       !----------
       ! Diffusion
       !----------
-      IF (do_ctmDiffusion) THEN
+      IF (CTM_STATE%do_ctmDiffusion) THEN
+         I = CTM_STATE%DIFF
 
          ! Initialize Diffusion increment bundle
          !----------------------------------
-         call Initialize_IncBundle_run(GIM(DIFF), EXPORT, TRIincCTM, __RC__)
-
-         I=DIFF
+         call Initialize_IncBundle_run(GIM(I), EXPORT, TRIincCTM, __RC__)
 
          call MAPL_TimerOn (STATE,GCNames(I))
          call ESMF_GridCompRun (GCS(I),               &
@@ -870,14 +928,14 @@
 
          ! Compute Diffusion increments and fill bundle
          !--------------------------------------------
-         call Compute_IncBundle(GIM(DIFF), EXPORT, TRIincCTM, STATE, __RC__)
+         call Compute_IncBundle(GIM(I), EXPORT, TRIincCTM, STATE, __RC__)
       END IF
 
-      IF (enable_pTracers) THEN
+      IF (CTM_STATE%enable_pTracers) THEN
          !---------------
          ! Passive Tracer
          !---------------
-         I=PTRA
+         I = CTM_STATE%PTRA
 
          call MAPL_TimerOn (STATE,GCNames(I))
          call ESMF_GridCompRun (GCS(I),               &
@@ -891,7 +949,7 @@
          !----------
          ! Chemistry: Phase 2
          !----------
-         I=CHEM   
+         I = CTM_STATE%CHEM   
 
          call MAPL_TimerOn (STATE,GCNames(I))
          call ESMF_GridCompRun (GCS(I),               &

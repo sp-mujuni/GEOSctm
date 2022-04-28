@@ -178,7 +178,7 @@
 ! !INTERFACE:
 !
       subroutine runGenericConvection (self, impConv, expConv, nymd, nhms,  &
-                   tdt, enable_rasCalculations, rc)
+                   tdt, rc)
 !
 ! !USES:
 !
@@ -186,7 +186,6 @@
       TYPE(ESMF_State), INTENT(INOUT) :: impConv ! Import State
       INTEGER, INTENT(IN) :: nymd, nhms          ! time
       REAL,    INTENT(IN) :: tdt                 ! chemical timestep (secs)
-      LOGICAL, INTENT(IN) :: enable_rasCalculations ! do RAS calculations?
 !
 ! !OUTPUT PARAMETERS:
       INTEGER, INTENT(OUT) ::  rc                ! Error return code:
@@ -341,13 +340,8 @@
       CALL MAPL_GetPointer(impConv,       ple,     'PLE', RC=STATUS); VERIFY_(STATUS)
       CALL MAPL_GetPointer(impConv, totalMass,    'MASS', RC=STATUS); VERIFY_(STATUS)
       CALL MAPL_GetPointer(impConv,       zle,     'ZLE', RC=STATUS); VERIFY_(STATUS)
-      IF (enable_rasCalculations) THEN
-         CALL MAPL_GetPointer(expConv,   CNV_MFD, 'CNV_MFD', RC=STATUS); VERIFY_(STATUS)
-         CALL MAPL_GetPointer(expConv,   CNV_MFC, 'CNV_MFC', RC=STATUS); VERIFY_(STATUS)
-      ELSE
-         CALL MAPL_GetPointer(impConv,   CNV_MFD, 'CNV_MFD', RC=STATUS); VERIFY_(STATUS)
-         CALL MAPL_GetPointer(impConv,   CNV_MFC, 'CNV_MFC', RC=STATUS); VERIFY_(STATUS)
-      ENDIF
+      CALL MAPL_GetPointer(impConv,   CNV_MFD, 'CNV_MFD', RC=STATUS); VERIFY_(STATUS)
+      CALL MAPL_GetPointer(impConv,   CNV_MFC, 'CNV_MFC', RC=STATUS); VERIFY_(STATUS)
 
       allocate(pbl(i1:i2,j1:j2),                 STAT=STATUS); VERIFY_(STATUS)
       allocate(press3c(i1:i2,j1:j2,k1:k2),  STAT=STATUS); VERIFY_(STATUS)

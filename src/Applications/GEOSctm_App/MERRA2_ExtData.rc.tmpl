@@ -1,3 +1,5 @@
+Ext_AllowExtrap: .TRUE.
+
 PrimaryExports%%
 # ---------|-------------|-------|--------|----------------------|--------|--------|-------------|----------|
 #  Import  |             |       | Regrid |        Refresh       | OffSet | Scale  | Variable On |   File   |
@@ -117,6 +119,11 @@ DQLDT       'kg/kg/s'        N        N           0                 0.0      1.0
 #----------------
 #AdvCore Specific
 #----------------
+PS0         'Pa'             N        N           0                 0.0      1.0     PS           /discover/nobackup/projects/gmao/merra2/data/products/d5124_m2_@sMonth/Y%y4/M%m2/@MERRA2type.inst3_3d_aer_Nv.%y4%m2%d2.nc4
+PS1         'Pa'             N        N           0;@nhmsDT             0.0      1.0     PS           /discover/nobackup/projects/gmao/merra2/data/products/d5124_m2_@sMonth/Y%y4/M%m2/@MERRA2type.inst3_3d_aer_Nv.%y4%m2%d2.nc4
+DELP0       'Pa'             N        N           0                 0.0      1.0     DELP          /discover/nobackup/projects/gmao/merra2/data/products/d5124_m2_@sMonth/Y%y4/M%m2/@MERRA2type.inst3_3d_aer_Nv.%y4%m2%d2.nc4
+DELP1       'Pa'             N        N           0;@nhmsDT             0.0      1.0     DELP          /discover/nobackup/projects/gmao/merra2/data/products/d5124_m2_@sMonth/Y%y4/M%m2/@MERRA2type.inst3_3d_aer_Nv.%y4%m2%d2.nc4
+
 PLE0        'Pa'             N        N           0                 0.0      1.0     PLE	   /discover/nobackup/projects/gmao/merra2/data/products/d5124_m2_@sMonth/Y%y4/M%m2/@MERRA2type.tavg3_3d_nav_Ne.%y4%m2%d2.nc4
 PLE1        'Pa'             N	      N           0;@nhmsDT            0.0      1.0     PLE	   /discover/nobackup/projects/gmao/merra2/data/products/d5124_m2_@sMonth/Y%y4/M%m2/@MERRA2type.tavg3_3d_nav_Ne.%y4%m2%d2.nc4
 UC0;VC0     'm s-1'          N        N           0                 0.0      1.0     U;V	   /discover/nobackup/projects/gmao/merra2/data/products/d5124_m2_@sMonth/Y%y4/M%m2/@MERRA2type.inst3_3d_asm_Nv.%y4%m2%d2.nc4

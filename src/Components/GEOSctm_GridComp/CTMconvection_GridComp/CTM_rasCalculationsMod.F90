@@ -11,7 +11,7 @@
 ! !USES:
 !
       use ESMF
-      use MAPL
+      use MAPL_Mod
       use GEOS_Mod
       use GEOS_UtilsMod
 

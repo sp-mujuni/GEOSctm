@@ -17,8 +17,6 @@
       USE GmiConvectionMethod_mod             ! GMI     Convection component
       USE GenericConvectionMethod_mod         ! Generic Convection component
       USE m_chars, ONLY : uppercase
-      use CTM_rasCalculationsMod, only : INIT_RASPARAMS, DO_RAS, RASPARAM_Type
-      USE Chem_UtilMod, only : pmaxmin
 
    IMPLICIT NONE
    PRIVATE
@@ -36,24 +34,21 @@
 !
 !  07Dec2012  Kouatchou  Created the Convection stub.
 !
-!EOP
-!-------------------------------------------------------------------------
-      TYPE Convection_State
+      TYPE T_Convection_State
          PRIVATE
          TYPE(gmiConvection_GridComp),  POINTER :: gmiCONV    => null()
          TYPE(genConvection_GridComp),  POINTER :: genCONV    => null()
-      END TYPE Convection_State
+         integer :: convecType   = 1       ! 1:  Generic Convection (only convective transport)
+                                           ! 2:  GMI convection
+         logical :: FIRST
+      END TYPE T_Convection_State
     
-      TYPE Convection_WRAP
-         TYPE (Convection_State), pointer :: PTR => null()
-      END TYPE Convection_WRAP
+      TYPE T_Convection_WRAP
+         TYPE (T_Convection_State), pointer :: PTR => null()
+      END TYPE T_Convection_WRAP
 
-      integer :: convecType ! 1:  Generic Convection (only convective transport)
-                            ! 2:  GMI convection
 
-      TYPE(RASPARAM_Type) :: RASPARAMS
-      logical             :: enable_rasCalculations = .FALSE.
-
+!EOP
 !-------------------------------------------------------------------------
 CONTAINS
 !-------------------------------------------------------------------------
@@ -85,8 +80,8 @@ CONTAINS
       character(len=ESMF_MAXSTR)      :: rcfilen = 'CTM_GridComp.rc'
 
       type (ESMF_Config)              :: CF
-      type (Convection_State), pointer:: state   ! internal, that is
-      type (Convection_wrap)          :: wrap
+      type (T_Convection_State), pointer:: state   ! internal, that is
+      type (T_Convection_wrap)          :: wrap
       type (ESMF_Config)              :: convConfigFile
 
       integer                         :: STATUS
@@ -136,9 +131,24 @@ CONTAINS
       call ESMF_ConfigLoadFile(convConfigFile, TRIM(rcfilen), rc=STATUS )
       VERIFY_(STATUS)
 
-      call ESMF_ConfigGetAttribute(convConfigFile, enable_rasCalculations, &
-                          Default  = .FALSE.,                          &
-                          Label    = "enable_rasCalculations:", __RC__ )
+      ! ------------------------------
+      ! convecType
+      !   1:  Generic Convection (only convective transport)
+      !   2:  GMI convection
+      !------ ------------------------
+
+      call ESMF_ConfigGetAttribute(convConfigFile, state%convecType, &
+                                   label   = "convecType:",&
+                                   default = 1, __RC__ )
+      state%FIRST = .TRUE.
+
+      IF ( MAPL_AM_I_ROOT() ) THEN
+         !PRINT*," -----> det_ent      = ", state%det_ent
+         !PRINT*," -----> do_downdraft = ", state%do_downdraft
+         PRINT*," -----> convecType   = ", state%convecType
+         PRINT *,"Done Reading the Convection Resource File"
+      END IF
+
 
 ! ========================== IMPORT STATE =========================
 
@@ -199,6 +209,20 @@ CONTAINS
            DIMS               = MAPL_DimsHorzOnly,    &
            VLOCATION          = MAPL_VLocationNone,    __RC__ )
 
+      call MAPL_AddImportSpec(GC, &
+           SHORT_NAME         = 'CNV_MFC',  &
+           LONG_NAME          = 'cumulative_mass_flux',  &
+           UNITS              = 'kg m-2 s-1', &
+           DIMS               = MAPL_DimsHorzVert,    &
+           VLOCATION          = MAPL_VLocationEdge,    __RC__ )
+
+      call MAPL_AddImportSpec(GC, &
+           SHORT_NAME         = 'CNV_MFD',  &
+           LONG_NAME          = 'detraining_mass_flux',  &
+           UNITS              = 'kg m-2 s-1', &
+           DIMS               = MAPL_DimsHorzVert,    &
+           VLOCATION          = MAPL_VLocationCenter,    __RC__ )
+
       call MAPL_AddImportSpec(GC,                                  &
            SHORT_NAME         = 'ConvTR',                            &
            LONG_NAME          = 'convected_quantities',              &
@@ -207,62 +231,6 @@ CONTAINS
            VLOCATION          = MAPL_VLocationCenter,                &
            DATATYPE           = MAPL_BundleItem,                     &
            RESTART            = MAPL_RestartOptional,                __RC__ )
-
-      IF (enable_rasCalculations) THEN
-         call MAPL_AddImportSpec(GC,                            &
-              SHORT_NAME = 'FRLAND',                            &
-              LONG_NAME  = 'fraction_of_land',                  &
-              UNITS      = '1',                                 &
-              DIMS       = MAPL_DimsHorzOnly,                   &
-              VLOCATION  = MAPL_VLocationNone,          __RC__  )
-
-         call MAPL_AddImportSpec ( gc,                          &
-              SHORT_NAME = 'KH',                                &
-              LONG_NAME  = 'scalar_diffusivity',                &
-              UNITS      = 'm+2 s-1',                           &
-              DIMS       = MAPL_DimsHorzVert,                   &
-              VLOCATION  = MAPL_VLocationEdge,           __RC__ )
-
-         call MAPL_AddImportSpec(GC,                            &
-              SHORT_NAME = 'TS',                                &
-              LONG_NAME  = 'surface temperature',               &
-              UNITS      = 'K',                                 &
-              DIMS       = MAPL_DimsHorzOnly,                   &
-              VLOCATION  = MAPL_VLocationNone,           __RC__ )
-      ELSE
-         call MAPL_AddImportSpec(GC, &
-            SHORT_NAME         = 'CNV_MFC',  &
-            LONG_NAME          = 'cumulative_mass_flux',  &
-            UNITS              = 'kg m-2 s-1', &
-            DIMS               = MAPL_DimsHorzVert,    &
-            VLOCATION          = MAPL_VLocationEdge,    __RC__ )
-
-         call MAPL_AddImportSpec(GC, &
-            SHORT_NAME         = 'CNV_MFD',  &
-            LONG_NAME          = 'detraining_mass_flux',  &
-            UNITS              = 'kg m-2 s-1', &
-            DIMS               = MAPL_DimsHorzVert,    &
-            VLOCATION          = MAPL_VLocationCenter,    __RC__ )
-      END IF
-
-! ========================== EXPORT STATE =========================
-
-      IF (enable_rasCalculations) THEN
-         call MAPL_AddExportSpec(GC,                                 &
-              SHORT_NAME         = 'CNV_MFC',                        &
-              LONG_NAME          = 'cumulative_mass_flux',           &
-              UNITS              = 'kg m-2 s-1',                     &
-              DIMS               = MAPL_DimsHorzVert,                &
-              VLOCATION          = MAPL_VLocationEdge,        __RC__ )
-
-         call MAPL_AddExportSpec(GC,                                 &
-              SHORT_NAME         = 'CNV_MFD',                        &
-              LONG_NAME          = 'detraining_mass_flux',           &
-              UNITS              = 'kg m-2 s-1',                     &
-              DIMS               = MAPL_DimsHorzVert,                &
-              VLOCATION          = MAPL_VLocationCenter,      __RC__ )
-      ENDIF
-
 
 !#include "convTendency_ExportSpec.h"
 
@@ -322,6 +290,8 @@ CONTAINS
       type(ESMF_State)                :: internal
       type(MAPL_VarSpec), pointer     :: InternalSpec(:)
       type (ESMF_Config)              :: convConfigFile
+      type (T_Convection_State), pointer:: conv_state   ! internal, that is
+      type (T_Convection_wrap)          :: wrap
  
       integer                         :: STATUS
       integer                         :: nymd, nhms  ! time of day
@@ -352,25 +322,16 @@ CONTAINS
       call MAPL_GenericInitialize ( gc, impConv, expConv, clock,  RC=STATUS )
       VERIFY_(STATUS)
 
+      ! Get my private state from the component
+      !----------------------------------------
+
+      call ESMF_UserCompGetInternalState(gc, 'Convection_state', WRAP, STATUS)
+      VERIFY_(STATUS)
+
+      conv_state => WRAP%PTR
+
       call MAPL_TimerOn(ggSTATE,"TOTAL")
       call MAPL_TimerOn(ggSTATE,"INITIALIZE")
-
-      convConfigFile = ESMF_ConfigCreate(rc=STATUS )
-      VERIFY_(STATUS)
-
-      call ESMF_ConfigLoadFile(convConfigFile, TRIM(rcfilen), rc=STATUS )
-      VERIFY_(STATUS)
-
-      ! ------------------------------
-      ! convecType
-      !   1:  Generic Convection (only convective transport)
-      !   2:  GMI convection
-      !------ ------------------------
-
-      call ESMF_ConfigGetAttribute(convConfigFile, convecType, &
-                         label   = "convecType:",&
-                         default = 1, rc=STATUS )
-      VERIFY_(STATUS)
 
 
       !  Get parameters from gc and clock
@@ -399,7 +360,7 @@ CONTAINS
 
       !  Call initialize
       !  ---------------
-      if (convecType == 1) then
+      if (conv_state%convecType == 1) then
          genCONV%i1 = i1
          genCONV%i2 = i2
          genCONV%im = im
@@ -411,7 +372,7 @@ CONTAINS
          call initializeGenericConvection ( genCONV, impConv, expConv, nymd, nhms, &
                         esmfGrid, cdt, STATUS )
          VERIFY_(STATUS)
-      elseif (convecType == 2) then
+      elseif (conv_state%convecType == 2) then
          gmiCONV%i1 = i1
          gmiCONV%i2 = i2
          gmiCONV%im = im
@@ -424,11 +385,6 @@ CONTAINS
                         esmfGrid, cdt, STATUS )
          VERIFY_(STATUS)
       end if
-
-      IF (enable_rasCalculations) THEN
-         IF (MAPL_AM_I_ROOT()) PRINT*, TRIM(Iam)//': Doing RAS Calculations'
-         CALL INIT_RASPARAMS(RASPARAMS)
-      ENDIF
 
       call MAPL_TimerOff(ggSTATE,"INITIALIZE")
       call MAPL_TimerOff(ggSTATE,"TOTAL")
@@ -490,16 +446,28 @@ CONTAINS
       type(ESMF_Grid)                 :: esmfGrid        
       type(ESMF_Time)                 :: TIME
       type (MAPL_MetaComp), pointer   :: ggState
-
-      !REAL :: qmin, qmax
-      !real, pointer, dimension(:,:,:) ::     CNV_MFC => null()
-      !real, pointer, dimension(:,:,:) ::     CNV_MFD => null()
+      type (T_Convection_State), pointer  :: conv_state
+      type (T_Convection_wrap)              :: WRAP
 
 !  Get my name and set-up traceback handle
 !  ---------------------------------------
       call ESMF_GridCompGet( GC, NAME=COMP_NAME, CONFIG=CF, GRID=esmfGrid, RC=STATUS )
       VERIFY_(STATUS)
       Iam = TRIM(COMP_NAME)//"::Run"
+
+      ! Get my internal MAPL_Generic state
+      !-----------------------------------
+      call MAPL_GetObjectFromGC ( GC, ggState, __RC__ )
+
+      call MAPL_TimerOn(ggState,"TOTAL")
+      call MAPL_TimerOn(ggState,"RUN")
+
+      ! Get my private state from the component
+      !----------------------------------------
+      call ESMF_UserCompGetInternalState(gc, 'Convection_state', WRAP, STATUS)
+      VERIFY_(STATUS)
+
+      conv_state => WRAP%PTR
 
 
 !  Get ESMF parameters from gc and clock
@@ -508,26 +476,15 @@ CONTAINS
                       cdt, rc=status )
       VERIFY_(STATUS)
 
-      IF (enable_rasCalculations) THEN
-         CALL runRAS(impConv, expConv, esmfGrid, cdt)
-
-         !call MAPL_GetPointer ( expConv,  CNV_MFC,  'CNV_MFC', __RC__ )
-         !call MAPL_GetPointer ( expConv,  CNV_MFD,  'CNV_MFD', __RC__ )
-
-         !CALL pmaxmin('CNV_MFC-:',CNV_MFC, qmin, qmax, size(CNV_MFD,1)*size(CNV_MFD,2), size(CNV_MFD,3)+1, 1. )
-         !CALL pmaxmin('CNV_MFD-:',CNV_MFD, qmin, qmax, size(CNV_MFD,1)*size(CNV_MFD,2), size(CNV_MFD,3), 1. )
-
-      ENDIF
-
 !  Run
 !  ---
-      if (convecType == 1) then
+      if (conv_state%convecType == 1) then
          CALL runGenericConvection ( genCONV, impConv, expConv, nymd, nhms, &
-                          cdt, enable_rasCalculations, STATUS )
+                          cdt, STATUS )
          VERIFY_(STATUS)
-      elseif (convecType == 2) then
+      elseif (conv_state%convecType == 2) then
          CALL runGmiConvection ( gmiCONV, impConv, expConv, nymd, nhms, &
-                          cdt, enable_rasCalculations, STATUS )
+                          cdt, STATUS )
          VERIFY_(STATUS)
       end if
 
@@ -543,22 +500,22 @@ CONTAINS
 ! !INTERFACE:
 !
 
-   SUBROUTINE Finalize_ ( gc, impConv, expConv, clock, rc )
+      SUBROUTINE Finalize_ ( gc, impConv, expConv, clock, rc )
 
 ! !USES:
 
-  implicit NONE
+      implicit NONE
 
 ! !INPUT PARAMETERS:
 
-   type(ESMF_Clock),  intent(inout) :: clock      ! The clock
+      type(ESMF_Clock),  intent(inout) :: clock      ! The clock
 
 ! !OUTPUT PARAMETERS:
 
-   type(ESMF_GridComp), intent(inout)  :: gc      ! Grid Component
-   type(ESMF_State), intent(inout) :: impConv     ! Import State
-   type(ESMF_State), intent(inout) :: expConv     ! Export State
-   integer, intent(out) ::  rc                    ! Error return code:
+      type(ESMF_GridComp), intent(inout)  :: gc      ! Grid Component
+      type(ESMF_State), intent(inout) :: impConv     ! Import State
+      type(ESMF_State), intent(inout) :: expConv     ! Export State
+      integer, intent(out) ::  rc                    ! Error return code:
                                                   !  0 - all is well
                                                   !  1 - 
 
@@ -571,48 +528,57 @@ CONTAINS
 !BOC
 !  ErrLog Variables
 !  ----------------
-   character(len=ESMF_MAXSTR)      :: IAm = 'Finalize_'
-   integer                         :: STATUS
-   character(len=ESMF_MAXSTR)      :: COMP_NAME
+      character(len=ESMF_MAXSTR)      :: IAm = 'Finalize_'
+      integer                         :: STATUS
+      character(len=ESMF_MAXSTR)      :: COMP_NAME
 
-   type(gmiConvection_GridComp), pointer     :: gmiCONV      ! Grid Component
-   type(genConvection_GridComp), pointer     :: genCONV      ! Grid Component
-   integer                         :: nymd, nhms  ! time
-   real                            :: cdt         ! chemistry timestep (secs)
+      type(gmiConvection_GridComp), pointer     :: gmiCONV      ! Grid Component
+      type(genConvection_GridComp), pointer     :: genCONV      ! Grid Component
+      integer                         :: nymd, nhms  ! time
+      real                            :: cdt         ! chemistry timestep (secs)
 
-    type(Convection_state), pointer   :: state
+      type(T_Convection_state), pointer   :: state
+      type (T_Convection_wrap)            :: WRAP
 
 !  Get my name and set-up traceback handle
 !  ---------------------------------------
-   call ESMF_GridCompGet( GC, NAME=COMP_NAME, RC=STATUS )
-   VERIFY_(STATUS)
-   Iam = TRIM(COMP_NAME)//"Finalize"
+      call ESMF_GridCompGet( GC, NAME=COMP_NAME, RC=STATUS )
+      VERIFY_(STATUS)
+      Iam = TRIM(COMP_NAME)//"Finalize"
+
+
+      ! Get my private state from the component
+      !----------------------------------------
+      call ESMF_UserCompGetInternalState(gc, 'Convection_state', WRAP, STATUS)
+      VERIFY_(STATUS)
+
+      state => WRAP%PTR
 
 !  Get ESMF parameters from gc and clock
 !  -------------------------------------
-   call extract_ ( gc, clock, genCONV, gmiCONV, nymd, nhms, cdt, STATUS, &
-                   state = state )
-   VERIFY_(STATUS)
+      call extract_ ( gc, clock, genCONV, gmiCONV, nymd, nhms, cdt, STATUS, &
+                      state = state )
+      VERIFY_(STATUS)
 
 !  Call ESMF version
 !  -----------------
-      if (convecType == 1) then
+      if (state%convecType == 1) then
          call finalizeGenericConvection ( genCONV )
-      elseif (convecType == 2) then
+      elseif (state%convecType == 2) then
          call finalizeGmiConvection ( gmiCONV )
       end if
 
 !  Finalize MAPL Generic.  Atanas says, "Do not deallocate foreign objects."
 !  -------------------------------------------------------------------------
-   call MAPL_GenericFinalize ( gc, impConv, expConv, clock,  RC=STATUS )
-   VERIFY_(STATUS)
+      call MAPL_GenericFinalize ( gc, impConv, expConv, clock,  RC=STATUS )
+      VERIFY_(STATUS)
 
 !  Destroy Legacy state
 !  --------------------
-      if (convecType == 1) then
+      if (state%convecType == 1) then
          deallocate ( state%genCONV, stat = STATUS )
          VERIFY_(STATUS)
-      elseif (convecType == 2) then
+      elseif (state%convecType == 2) then
          deallocate ( state%gmiCONV, stat = STATUS )
          VERIFY_(STATUS)
       end if
@@ -620,146 +586,6 @@ CONTAINS
    RETURN_(ESMF_SUCCESS)
 
    END SUBROUTINE Finalize_
-!EOC
-!-------------------------------------------------------------------------
-!BOP
-!
-! !IROUTINE:  runRAS
-!
-! !INTERFACE:
-!
-      subroutine runRAS(impConv, expConv, esmfGrid, cdt)
-!
-! !USES:
-      !USE Chem_UtilMod, only : pmaxmin
-      use, intrinsic :: iso_fortran_env, only: REAL64
-
-     implicit NONE
-!
-! !INPUT PARAMETERS:
-      real,             intent(in   ) :: cdt
-!
-! !INPUT/OUTPUT PARAMETERS:
-      type(ESMF_Grid),  intent(inout) :: esmfGrid
-      type(ESMF_State), intent(inout) :: impConv     ! Import State
-      type(ESMF_State), intent(inout) :: expConv     ! Export State
-!EOP
-!-------------------------------------------------------------------------
-!BOC
-
-      character(len=ESMF_MAXSTR)      :: IAm = 'runRAS'
-      integer                         :: RC, STATUS, IM, JM, LM
-      real, pointer, dimension(:,:)   ::      FRLAND => null()
-      real, POINTER, dimension(:,:)   ::        PBLH => null() 
-      real, pointer, dimension(:,:)   ::          TS => null()
-      real, pointer, dimension(:,:,:) ::     CNV_MFC => null()
-      real, pointer, dimension(:,:,:) ::     CNV_MFD => null()
-      real, pointer, dimension(:,:,:) ::           T => null()
-      real, pointer, dimension(:,:,:) ::          TH => null()
-      real, pointer, dimension(:,:,:) ::          KH => null()
-      real, pointer, dimension(:,:,:) ::           Q => null()
-      real, pointer, dimension(:,:,:) ::         PLE => null()
-
-      real, pointer, dimension(:)     ::        PREF => null()
-      real, pointer, dimension(:,:,:) ::  CNV_MFCras => null()
-      real, pointer, dimension(:,:,:) ::  CNV_MFDras => null()
-
-      real(REAL64), pointer, dimension(:,:) :: LATS    => null()
-      real(REAL64), pointer, dimension(:,:) :: LONS    => null()
-      real(REAL64), allocatable             :: AK(:)
-      real(REAL64), allocatable             :: BK(:)
-      !REAL :: qmin, qmax
-
-         call MAPL_GetPointer ( impConv,       Q,         'Q',  __RC__ )
-         call MAPL_GetPointer ( impConv,       T,         'T',  __RC__ )
-         call MAPL_GetPointer ( impConv,      KH,        'KH',  __RC__ )
-         call MAPL_GetPointer ( impConv,      TS,        'TS',  __RC__ )
-         call MAPL_GetPointer ( impConv,     PLE,       'PLE',  __RC__ )
-         call MAPL_GetPointer ( impConv,    PBLH,      'ZPBL',  __RC__ )
-         call MAPL_GetPointer ( impConv,  FRLAND,    'FRLAND',  __RC__ )
-
-         IM = SIZE(T, 1)
-         JM = SIZE(T, 2)
-         LM = SIZE(T, 3)
-
-         ! Get the AK and BK
-         allocate(AK(LM+1),stat=status)
-         VERIFY_(STATUS)
-         allocate(BK(LM+1),stat=status)
-         VERIFY_(STATUS)
-
-         call ESMF_AttributeGet(esmfGrid,name="GridAK",valuelist=AK,rc=status)
-         VERIFY_(STATUS)
-         call ESMF_AttributeGet(esmfGrid,name="GridBK",valuelist=BK,rc=status)
-         VERIFY_(STATUS)
-
-         ! Get the LATS and LONS
-         call ESMF_GridGetCoord(esmfGrid, coordDim=2, localDE=0, &
-                                staggerloc=ESMF_STAGGERLOC_CENTER, &
-                                farrayPtr=LATS, rc=status)
-         VERIFY_(status)
-
-         call ESMF_GridGetCoord(esmfGrid, coordDim=1, localDE=0, &
-                                staggerloc=ESMF_STAGGERLOC_CENTER, &
-                                farrayPtr=LONS, rc=status)
-
-         !-----------------------------------------
-         ! Compute the reference air pressure in Pa
-         ! AK in Pa
-         ! MAPL_P00 = 100000 Pa
-         !-----------------------------------------
-         ALLOCATE(PREF(LM+1))
-         PREF = AK + BK * MAPL_P00
-
-         ALLOCATE(TH        (IM,JM,1:LM))
-         ALLOCATE(CNV_MFDras(IM,JM,1:LM))
-         ALLOCATE(CNV_MFCras(IM,JM,0:LM))
-
-         ! Compute the potential temperature
-         TH(:,:,:) = T(:,:,:)/ &
-                     ((0.5*(PLE(:,:,0:LM-1) +  PLE(:,:,1:LM  ) ))/100000.)**(MAPL_RGAS/MAPL_CP)
-
-!         IF ( MAPL_am_I_root() ) THEN
-!            PRINT*, "DT: ", cdt
-!            PRINT*
-!            PRINT*, "AK: ", AK
-!            PRINT*
-!            PRINT*, "BK: ", BK
-!            PRINT*
-!            PRINT*, "PREF: ", PREF
-!            PRINT*
-!         END IF
-!
-!         CALL pmaxmin('LONS :',REAL(LONS), qmin, qmax, IM*JM,    1, 1. )
-!         CALL pmaxmin('LATS :',REAL(LATS), qmin, qmax, IM*JM,    1, 1. )
-!         CALL pmaxmin('KH :',        KH, qmin, qmax, IM*JM, LM+1, 1. )
-!         CALL pmaxmin('TH :',        TH, qmin, qmax, IM*JM, LM  , 1. )
-!         CALL pmaxmin('TS :',        TS, qmin, qmax, IM*JM,    1, 1. )
-!         CALL pmaxmin('Q  :',         Q, qmin, qmax, IM*JM, LM  , 1. )
-!         CALL pmaxmin('FRLAND:', FRLAND, qmin, qmax, IM*JM,    1, 1. )
-!         CALL pmaxmin('PLE :',      PLE, qmin, qmax, IM*JM, LM+1, 1. )
-!         CALL pmaxmin('PBLH :',    PBLH, qmin, qmax, IM*JM,    1, 1. )
-!
-         ! Do the RAS calculations to obtain the values of CNV_MFD and CNV_MFC
-         CALL DO_RAS(RASPARAMS, PREF, TH, PLE, KH, PBLH, Q, &
-                     FRLAND, TS, CNV_MFDras, CNV_MFCras,      &
-                     REAL(LATS), REAL(LONS), cdt, IM, JM, LM)
-
-         !CALL pmaxmin('CNV_MFC :',CNV_MFCras, qmin, qmax, IM*JM, LM+1, 1. )
-         !CALL pmaxmin('CNV_MFD :',CNV_MFDras, qmin, qmax, IM*JM, LM, 1. )
-
-         ! Populate the export state
-         call MAPL_GetPointer ( expConv,  CNV_MFC,  'CNV_MFC', ALLOC=.TRUE., __RC__ )
-         call MAPL_GetPointer ( expConv,  CNV_MFD,  'CNV_MFD', ALLOC=.TRUE., __RC__ )
-
-         CNV_MFC(:,:,:) = CNV_MFCras(:,:,:)
-         CNV_MFD(:,:,:) = CNV_MFDras(:,:,:)
-
-         DEALLOCATE(PREF)
-         DEALLOCATE(CNV_MFDras, CNV_MFCras)
-         DEALLOCATE(TH)
-         deallocate(AK, BK)
-      end subroutine runRAS
 !EOC
 !-------------------------------------------------------------------------
     SUBROUTINE extract_ ( gc, clock, genCONV, gmiCONV, nymd, nhms, cdt, &
@@ -772,10 +598,10 @@ CONTAINS
     integer, intent(out)               :: nymd, nhms
     real, intent(out)                  :: cdt
     integer, intent(out)               :: rc
-    type(Convection_state), pointer, optional   :: state
+    type(T_Convection_state), pointer, optional   :: state
 
 
-    type(Convection_state), pointer    :: myState
+    type(T_Convection_state), pointer    :: myState
 
 !   ErrLog Variables
 !   ----------------
@@ -785,7 +611,7 @@ CONTAINS
 
     type(ESMF_Time)      :: TIME
     type(ESMF_Config)    :: CF
-    type(Convection_Wrap)  :: wrap
+    type(T_Convection_Wrap)  :: wrap
     integer              :: IYR, IMM, IDD, IHR, IMN, ISC
 
 
@@ -808,14 +634,14 @@ CONTAINS
 
 !   This is likely to be allocated during initialize only
 !   -----------------------------------------------------
-      if (convecType == 1) then
+      if (myState%convecType == 1) then
          if ( .not. associated(myState%genCONV) ) then
               allocate ( myState%genCONV, stat=STATUS )
               VERIFY_(STATUS)
          end if
 
          genCONV  => myState%genCONV
-      elseif (convecType == 2) then
+      elseif (myState%convecType == 2) then
          if ( .not. associated(myState%gmiCONV) ) then
               allocate ( myState%gmiCONV, stat=STATUS )
               VERIFY_(STATUS)
