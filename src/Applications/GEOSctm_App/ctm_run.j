@@ -600,7 +600,7 @@ if( ${DRIVING_DATASETS} == MERRA2) then
         set sYear  = 2010
         set sMonth = jan10
         set MERRA2type = MERRA2_400
-        set data_Transition_Date = 20200101
+        set data_Transition_Date = 20500101
     endif
 
     set newstring = "EXTDATA_CF: ${COMPNAME}_ExtData_${sYear}.rc"
