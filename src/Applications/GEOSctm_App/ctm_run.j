@@ -591,12 +591,12 @@ if( ${DRIVING_DATASETS} == MERRA2) then
         set sMonth = jan91
         set MERRA2type = MERRA2_200
         set data_Transition_Date = 20000101
-    else if( $startYear > 1999 && $startYear < 2010 ) then
+    else if( $startYear > 1999 && $startYear < 2011 ) then
         set sYear  = 2000
         set sMonth = jan00
         set MERRA2type = MERRA2_300
-        set data_Transition_Date = 20100101
-    else if( $startYear > 2009 ) then
+        set data_Transition_Date = 20110101
+    else if( $startYear > 2010 ) then
         set sYear  = 2010
         set sMonth = jan10
         set MERRA2type = MERRA2_400

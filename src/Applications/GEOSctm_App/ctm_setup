@@ -236,13 +236,13 @@ echo "Enter the ${C1}Atmospheric Horizontal Resolution${CN} code:"
 echo "--------------------------------------"
 echo "            Cubed-Sphere"
 echo "--------------------------------------"
-echo "   ${C2}c12   --   8  deg ${CN}"
-echo "   ${C2}c24   --   4  deg ${CN}"
-echo "   ${C2}c48   --   2  deg ${CN}"
-echo "   ${C2}c90   --   1  deg ${CN}"
-echo "   ${C2}c180  -- 1/2  deg (${C1}56-km${C2}) ${CN}"
-echo "   ${C2}c360  -- 1/4  deg (${C1}28-km${C2}) ${CN} "
-echo "   ${C2}c720  -- 1/8  deg (${C1}14-km${C2}) ${CN}"
+echo "   ${C2}c12  --  8   deg ${CN}"
+echo "   ${C2}c24  --  4   deg ${CN}"
+echo "   ${C2}c48  --  2   deg ${CN}"
+echo "   ${C2}c90  --  1   deg ${CN}"
+echo "   ${C2}c180 -- 1/2  deg (${C1}56-km${C2}) ${CN}"
+echo "   ${C2}c360 -- 1/4  deg (${C1}28-km${C2}) ${CN} "
+echo "   ${C2}c720 -- 1/8  deg (${C1}14-km${C2}) ${CN}"
 echo "   ${C2}c1440 - 1/16 deg (${C1} 7-km${C2}) ${CN}"
 echo "   ${C2}          DYAMOND Grids                 "
 echo "   ${C2}c768 -- 1/8  deg (${C1}12-km${C2}) ${CN}"
@@ -294,10 +294,10 @@ echo "Use ${C1}Hydrostatic Atmosphere${CN}? (Default: ${C2}${DEFAULT_HYDROSTATIC
 set   USE_HYDROSTATIC = $<
 
 if( .$USE_HYDROSTATIC == . ) then
-	set USE_HYDROSTATIC = $DEFAULT_HYDROSTATIC
+   set USE_HYDROSTATIC = $DEFAULT_HYDROSTATIC
 else
-	set USE_HYDROSTATIC = `echo $USE_HYDROSTATIC | tr "[:lower:]" "[:upper:]"`
-	if(  $USE_HYDROSTATIC == "Y"     | \
+   set USE_HYDROSTATIC = `echo $USE_HYDROSTATIC | tr "[:lower:]" "[:upper:]"`
+   if(  $USE_HYDROSTATIC == "Y"     | \
         $USE_HYDROSTATIC == "YES"   | \
         $USE_HYDROSTATIC == "T"     | \
         $USE_HYDROSTATIC == "TRUE"  ) set USE_HYDROSTATIC = TRUE
@@ -416,13 +416,13 @@ else if ( $SITE == 'NAS' ) then
 
    echo "Enter the ${C1}Processor Type${CN} you wish to run on:"
    if( "$BUILT_ON_ROME" != "TRUE" ) then
-   echo "   ${C2}has (Haswell)${CN}"
-   echo "   ${C2}bro (Broadwell)${CN}"
-   echo "   ${C2}sky (Skylake)${CN} (default)"
-   echo "   ${C2}cas (Cascade Lake)${CN}"
-   echo " "
-   echo " NOTE: Due to how FV3 is compiled by default, Sandy Bridge"
-   echo "       and Ivy Bridge are not supported by current GEOS"
+      echo "   ${C2}has (Haswell)${CN}"
+      echo "   ${C2}bro (Broadwell)${CN}"
+      echo "   ${C2}sky (Skylake)${CN} (default)"
+      echo "   ${C2}cas (Cascade Lake)${CN}"
+      echo " "
+      echo " NOTE: Due to how FV3 is compiled by default, Sandy Bridge"
+      echo "       and Ivy Bridge are not supported by current GEOS"
    else
       echo "   ${C2}rom (AMD Rome)${CN} (default)"
    endif
@@ -431,16 +431,16 @@ else if ( $SITE == 'NAS' ) then
    set MODEL = `echo $MODEL | tr "[:upper:]" "[:lower:]"`
    if ( .$MODEL == .) then
       if( "$BUILT_ON_ROME" != "TRUE" ) then
-      set MODEL = 'sky'
+         set MODEL = 'sky'
       else
          set MODEL = 'rom'
       endif
    endif
 
    if( "$BUILT_ON_ROME" != "TRUE" ) then
-   if( $MODEL != 'has' & \
-       $MODEL != 'bro' & \
-       $MODEL != 'sky' & \
+      if( $MODEL != 'has' & \
+          $MODEL != 'bro' & \
+          $MODEL != 'sky' & \
           $MODEL != 'cas' ) goto ASKPROC
    else
       if( $MODEL != 'rom' ) goto ASKPROC
@@ -487,6 +487,10 @@ endif
 
 # The CTM for now seems to only use Reynolds
 set OCEAN_TAG = Reynolds
+# To simplify comparison w/ ctm_setup:
+set OGCM    = FALSE
+set OGCM_NX = 0
+set OGCM_NY = 0
 
 # Set DEFAULT SHMEM Parameter
 # ---------------------------
@@ -578,12 +582,18 @@ if( $GEOSCTM_IM ==  "c90" ) then
      set       DT = 450
      set SOLAR_DT = 3600
      set IRRAD_DT = 3600
-     set OCEAN_DT = $IRRAD_DT
-     set  CHEM_DT = $DT
      set GEOSCTM_IM  = 90
      set GEOSCTM_JM  = `expr $GEOSCTM_IM \* 6`
-     set       NX = 4
-     set       NY = `expr $NX \* 6`
+     if( $OGCM == TRUE ) then
+          set  NX = $OGCM_NY
+          set  NY = $OGCM_NX
+     set OCEAN_DT = $DT
+     else
+          set  NX = 4
+          set  NY = `expr $NX \* 6`
+     set OCEAN_DT = $IRRAD_DT
+     endif
+     set  CHEM_DT = $DT
      set HYDROSTATIC = $USE_HYDROSTATIC
      set HIST_IM  = `expr $GEOSCTM_IM \* 4`
      set HIST_JM  = `expr $GEOSCTM_IM \* 2 + 1`
@@ -597,12 +607,18 @@ if( $GEOSCTM_IM ==  "c180" ) then
      set       DT = 450
      set SOLAR_DT = 3600
      set IRRAD_DT = 3600
-     set OCEAN_DT = $IRRAD_DT
      set  CHEM_DT = $DT
      set GEOSCTM_IM  = 180
      set GEOSCTM_JM  = `expr $GEOSCTM_IM \* 6`
-     set       NX = 6
-     set       NY = `expr $NX \* 6`
+     if( $OGCM == TRUE ) then
+          set  NX = $OGCM_NY
+          set  NY = $OGCM_NX
+     set OCEAN_DT = $DT
+     else
+          set  NX = 6
+          set  NY = `expr $NX \* 6`
+     set OCEAN_DT = $IRRAD_DT
+     endif
      set HYDROSTATIC = $USE_HYDROSTATIC
      set HIST_IM  = `expr $GEOSCTM_IM \* 4`
      set HIST_JM  = `expr $GEOSCTM_IM \* 2 + 1`
@@ -795,9 +811,9 @@ set JOB_SGMT = "$JOB_SGMT 000000"
 set FV_NWAT    = ""
 set FV_ZTRACER = "z_tracer    = .T."
 if ( "$USE_HYDROSTATIC" == "TRUE" ) then
-	set FV_MAKENH     = "Make_NH     = .F."
-	set FV_HYDRO      = "hydrostatic = .T."
-	set FV_SATADJ     = "do_sat_adj  = .F."
+   set FV_MAKENH     = "Make_NH     = .F."
+   set FV_HYDRO      = "hydrostatic = .T."
+   set FV_SATADJ     = "do_sat_adj  = .F."
 else
    # Logic for NH runs based on build type
    if ( "$DEFAULT_HYDROSTATIC" == "TRUE") then
@@ -1122,7 +1138,7 @@ endif
 
 if( $SITE == 'NAS' ) then
               setenv BATCH_CMD "qsub"                 # PBS Batch command
-              setenv BATCH_GROUP "PBS -W group_list="                                  # PBS Syntax for GROUP
+              setenv BATCH_GROUP "PBS -W group_list=" # PBS Syntax for GROUP
               setenv BATCH_TIME "PBS -l walltime="    # PBS Syntax for walltime
               setenv BATCH_JOBNAME "PBS -N "          # PBS Syntax for job name
               setenv BATCH_OUTPUTNAME "PBS -o "       # PBS Syntax for job output name
@@ -1134,10 +1150,10 @@ if( $SITE == 'NAS' ) then
               setenv ARCHIVE_T  "8:00:00"             # Wallclock Time   for ctm_archive.j
               if( $GPU == "TRUE" ) then
                  set NCPUS_PER_NODE = 16              # CPUS per node
-                 set MODEL = "san_gpu"                                                 # Model of CPU
-                 set QTYPE = "gpu_k40"                                                 # Queue to use
+                 set MODEL = "san_gpu"                # Model of CPU
+                 set QTYPE = "gpu_k40"                # Queue to use
               else
-                 set QTYPE = "normal"                                                  # Queue to use
+                 set QTYPE = "normal"                 # Queue to use
               endif
 
               #@ NODES  = `echo "($MODEL_NPES + $NCPUS_PER_NODE - 1)/$NCPUS_PER_NODE" | bc`
@@ -1158,9 +1174,6 @@ if( $SITE == 'NAS' ) then
               setenv    MOVE_P  "PBS -l select=1:ncpus=1"                                                                      # PE Configuration for ctm_moveplot.j
 
               setenv BCSDIR     /nobackup/gmao_SIteam/ModelData/bcs/${LSM_BCS}/${LSM_BCS}_${OCEAN_TAG}      # location of Boundary Conditions
-              setenv REPLAY_ANA_EXPID    ONLY_MERRA2_SUPPORTED                                              # Default Analysis Experiment for REPLAY
-              setenv REPLAY_ANA_LOCATION ONLY_MERRA2_SUPPORTED                                              # Default Analysis Location   for REPLAY
-              setenv M2_REPLAY_ANA_LOCATION /nobackup/gmao_SIteam/ModelData/verification/MERRA-2            # Default Analysis Location   for M2 REPLAY
 
               setenv CHMDIR     /nobackup/gmao_SIteam/ModelData/fvInput_nc3            # locations of Aerosol Chemistry BCs
               setenv WRKDIR     /nobackup/$LOGNAME                                     # user work directory
@@ -1202,9 +1215,6 @@ else if( $SITE == 'NCCS' ) then
               setenv    MOVE_P  "SBATCH --ntasks=1"                                           # PE Configuration for ctm_moveplot.j
 
               setenv BCSDIR  /discover/nobackup/ltakacs/bcs/${LSM_BCS}/${LSM_BCS}_${OCEAN_TAG}  # location of Boundary Conditions
-              setenv REPLAY_ANA_EXPID x0039                                                     # Default Analysis Experiment for REPLAY
-              setenv REPLAY_ANA_LOCATION /discover/nobackup/projects/gmao/g6dev/ltakacs/x0039   # Default Analysis Location   for REPLAY
-              setenv M2_REPLAY_ANA_LOCATION /discover/nobackup/projects/gmao/share/gmao_ops/verification/MERRA-2 # Default Analysis Location   for M2 REPLAY
 
               setenv CHMDIR     $SHARE/dao_ops/fvInput_nc3                             # locations of Aerosol Chemistry BCs
               setenv WRKDIR     /discover/nobackup/$LOGNAME                            # user work directory
@@ -1237,9 +1247,6 @@ else if( $SITE == 'AWS' ) then
               setenv    MOVE_P  "SBATCH --ntasks=1"                                    # PE Configuration for ctm_moveplot.j
 
               setenv BCSDIR     /ford1/share/gmao_SIteam/ModelData/bcs/${LSM_BCS}/${LSM_BCS}_${OCEAN_TAG}  # location of Boundary Conditions
-              setenv REPLAY_ANA_EXPID    REPLAY_UNSUPPORTED                                                # Default Analysis Experiment for REPLAY
-              setenv REPLAY_ANA_LOCATION REPLAY_UNSUPPORTED                                                # Default Analysis Location   for REPLAY
-              setenv M2_REPLAY_ANA_LOCATION REPLAY_UNSUPPORTED                                             # Default Analysis Location   for M2 REPLAY
 
               setenv CHMDIR     /ford1/share/gmao_SIteam/ModelData/fvInput_nc3         # locations of Aerosol Chemistry BCs
               setenv WRKDIR     /home/$LOGNAME                                         # user work directory
@@ -1278,15 +1285,12 @@ else
               setenv    MOVE_P  NULL                                                   # PE Configuration for ctm_moveplot.j
 
               setenv BCSDIR     /ford1/share/gmao_SIteam/ModelData/bcs/${LSM_BCS}/${LSM_BCS}_${OCEAN_TAG}  # location of Boundary Conditions
-              setenv REPLAY_ANA_EXPID    REPLAY_UNSUPPORTED                                                # Default Analysis Experiment for REPLAY
-              setenv REPLAY_ANA_LOCATION REPLAY_UNSUPPORTED                                                # Default Analysis Location   for REPLAY
-              setenv M2_REPLAY_ANA_LOCATION REPLAY_UNSUPPORTED                                             # Default Analysis Location   for M2 REPLAY
 
               setenv CHMDIR     /ford1/share/gmao_SIteam/ModelData/fvInput_nc3         # locations of Aerosol Chemistry BCs
               setenv WRKDIR     /home/$LOGNAME                                         # user work directory
               setenv COUPLEDIR  /ford1/share/gmao_SIteam/ModelData/Forcings            # Coupled Ocean/Atmos Forcing
-                 set NX = 1
-                 set NY = 6
+              set NX = 1
+              set NY = 6
               set CNV_NX = ${NX}
               set CNV_NY = ${NY}
               setenv CPEXEC     /bin/cp                                                # Copy utility for large copies
@@ -1356,10 +1360,10 @@ while( $check == FALSE )
             echo $HISTORYrc >                 $HOME/.HISTORYrc
             /bin/cp -f $HISTORYrc/HISTORY.GEOSCTM.rc.tmpl $TMPHIST
        else
-            echo "This condition is based on updating HISTORY.GEOSCTM.rc.tmpl with CVS"
-            echo "This has no equivalent in git at present. Please contact Matt"
-            echo "Thompson or Larry Takacs to help resolve this."
-            exit 2
+           echo "This condition is based on updating HISTORY.GEOSCTM.rc.tmpl with CVS"
+           echo "This has no equivalent in git at present. Please contact Matt"
+           echo "Thompson or Larry Takacs to help resolve this."
+           exit 2
        endif
   endif
 end
@@ -1497,7 +1501,7 @@ setenv CNVDIR $EXPDIR/convert
        set GEOSDIR = $NUGEOSDIR
   endif
 
-    set check =  FALSE
+  set check =  FALSE
 
 GEOSDIR:
 while( $check == FALSE )
@@ -1568,12 +1572,12 @@ echo $GROUP > $HOME/.GROUProot
 #      Copy Model Executable and RC Files to Experiment Directory
 #######################################################################
 
-  mkdir -p                                                   $EXPDIR/RC
-  rsync -ax                  $GEOSDIR/etc/*.rc               $EXPDIR/RC
+  mkdir -p                                                $EXPDIR/RC
+  rsync -ax                  $GEOSDIR/etc/*.rc            $EXPDIR/RC
   if( .$EMISSIONS != . ) then
-                     /bin/cp $GEOSDIR/etc/$EMISSIONS/*.rc    $EXPDIR/RC
+                     /bin/cp $GEOSDIR/etc/$EMISSIONS/*.rc $EXPDIR/RC
   else
-    set EMISSIONS = g5chem
+     set EMISSIONS = g5chem
   endif
 
 if ( $LINKX == "TRUE" ) then
@@ -1994,7 +1998,6 @@ foreach FILE ($FILES)
       echo "ERROR! Cannot find $FILE in $BINDIR or $ETCDIR!"
       exit 2
    endif
-
 
    sed -f $HOMDIR/sedfile $HOMDIR/tmpfile > $HOMDIR/$FILE
 
