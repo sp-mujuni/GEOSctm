@@ -1875,13 +1875,6 @@ s?>>>EMIP_OLDLAND<<<?$EMIP_OLDLAND?g
 s?>>>EMIP_NEWLAND<<<?$EMIP_NEWLAND?g
 s?@LSM_PARMS?$LSM_PARMS?g
 
-s?>>>4DIAUDAS<<<?#DELETE?g
-s?>>>REGULAR_REPLAY<<<?#?g
-s?>>>REGULAR_REPLAY_GMAO<<<?#?g
-s?>>>REGULAR_REPLAY_NCEP<<<?#DELETE?g
-s?>>>REGULAR_REPLAY_ECMWF<<<?#DELETE?g
-s?ana4replay.eta.%y4%m2%d2_%h2z.nc4?/discover/nobackup/projects/gmao/share/gmao_ops/verification/MERRA2_MEANS/ana/Y%y4/M%m2/MERRA-2.ana.eta.%y4%m2%d2_%h2z.nc4?g
-
 s?@OX_RELAXTIME?259200.?g
 s?@PCHEM_CLIM_YEARS?228?g
 
