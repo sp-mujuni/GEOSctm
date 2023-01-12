@@ -581,23 +581,23 @@ if( ${DRIVING_DATASETS} == MERRA2) then
     set oldstring = `cat CAP.rc | grep EXTDATA_CF:`
     set COMPNAME = `grep COMPNAME CAP.rc | awk '{print $2}'`
 
-    if( $startYear > 1979 && $startYear < 1992 ) then
+    if( $startYear >= 1980 && $startYear < 1992 ) then
         set sYear  = 1980
         set sMonth = jan79
         set MERRA2type = MERRA2_100
         set data_Transition_Date = 19920101
-    else if( $startYear > 1991 && $startYear < 2000 ) then
+    else if( $startYear >= 1992 && $startYear < 2000 ) then
         set sYear  = 1992
         set sMonth = jan91
         set MERRA2type = MERRA2_200
         set data_Transition_Date = 20000101
-    else if( $startYear > 1999 && $startYear < 2010 ) then
+    else if( $startYear >= 2000 && $startYear < 2011 ) then
         set sYear  = 2000
         set sMonth = jan00
         set MERRA2type = MERRA2_300
-        set data_Transition_Date = 20100101
-    else if( $startYear > 2009 ) then
-        set sYear  = 2010
+        set data_Transition_Date = 20110101
+    else if( $startYear >= 2011 ) then
+        set sYear  = 2011
         set sMonth = jan10
         set MERRA2type = MERRA2_400
         set data_Transition_Date = 20500101
