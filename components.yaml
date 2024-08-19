@@ -5,13 +5,13 @@ GEOSctm:
 env:
   local: ./@env
   remote: ../ESMA_env.git
-  branch: feature/mathomp4/3.4-sles15
+  tag: v3.4.2
   develop: main
 
 cmake:
   local: ./@cmake
   remote: ../ESMA_cmake.git
-  branch: feature/mathomp4/3.6-sles15
+  tag: v3.6.7
   develop: develop
 
 ecbuild:
