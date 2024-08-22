@@ -2,7 +2,7 @@ ecbuild_add_executable (
   TARGET GEOSctm.x
   SOURCES GEOSctm.F90
   LIBS GEOSctm_GridComp
-  )  
+  )
 
 set (CMAKE_Fortran_FLAGS_RELEASE "${GEOS_Fortran_FLAGS_VECT}")
 
@@ -35,7 +35,7 @@ install (
    FILES fvcore_layout.rc logging.yaml
    DESTINATION etc
    )
-   
+
 if(HYDROSTATIC)
    set(CFG_HYDROSTATIC TRUE)
 else()
